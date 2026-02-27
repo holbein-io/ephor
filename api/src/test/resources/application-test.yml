@@ -1,0 +1,21 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    enabled: true
+
+auth:
+  enabled: false
+
+logging:
+  level:
+    io.holbein.ephor: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.liquibase: INFO

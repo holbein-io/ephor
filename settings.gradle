@@ -1,0 +1,4 @@
+rootProject.name = 'ephor'
+
+include 'api'
+include 'dashboard'

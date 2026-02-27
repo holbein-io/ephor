@@ -1,0 +1,13 @@
+apiVersion: v2
+name: ephor
+description: A Helm chart for deploying Ephor - security monitoring platform
+type: application
+version: 0.1.0
+appVersion: "0.0.1-SNAPSHOT"
+keywords:
+  - ephor
+  - security
+  - monitoring
+home: https://github.com/holbein-io/ephor
+maintainers:
+  - name: holbein-io

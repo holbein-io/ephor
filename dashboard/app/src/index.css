@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+@theme {
+  /* === Backgrounds === */
+  --color-bg-primary: #08080A;
+  --color-bg-secondary: #0E0E11;
+  --color-bg-tertiary: #141418;
+  --color-bg-card: #111115;
+
+  /* === Borders === */
+  --color-border: #23232A;
+  --color-border-subtle: #1A1A20;
+  --color-border-hover: #2E2E36;
+
+  /* === Text === */
+  --color-text-primary: #E8E4DE;
+  --color-text-secondary: #9A9690;
+  --color-text-tertiary: #6A665F;
+
+  /* === Accent (Gold) === */
+  --color-accent: #C4973B;
+  --color-accent-hover: #D4A74B;
+
+  /* === Semantic === */
+  --color-success: #4A9E6A;
+  --color-warning: #C4973B;
+  --color-danger: #B83B3B;
+
+  /* === Severity === */
+  --color-severity-critical: #EF4444;
+  --color-severity-high: #F59E0B;
+  --color-severity-medium: #EAB308;
+  --color-severity-low: #3B82F6;
+  --color-severity-unknown: #6B7280;
+
+  /* === Fonts === */
+  --font-display: "Cormorant Garamond", "Georgia", serif;
+  --font-body: "Hanken Grotesk", "Inter", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", "Menlo", monospace;
+
+  /* === Easing === */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-sine: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
+  }
+}

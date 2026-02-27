@@ -1,0 +1,50 @@
+services:
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: ephor-postgres
+    environment:
+      POSTGRES_DB: ephor
+      POSTGRES_USER: ephor
+      POSTGRES_PASSWORD: ephor
+    ports:
+      - "5432:5432"
+    volumes:
+      - ephor-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ephor -d ephor"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    container_name: ephor-api
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ephor
+      SPRING_DATASOURCE_USERNAME: ephor
+      SPRING_DATASOURCE_PASSWORD: ephor
+      AUTH_DEV_ENABLED: "true"
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  dashboard:
+    build:
+      context: dashboard/app
+      dockerfile: Dockerfile
+    container_name: ephor-dashboard
+    environment:
+      API_URL: http://api:8080
+    ports:
+      - "3000:8080"
+    depends_on:
+      - api
+
+volumes:
+  ephor-pgdata:

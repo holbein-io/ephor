@@ -1,0 +1,63 @@
+spring:
+  datasource:
+    url:
+    username:
+    password:
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  liquibase:
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /api/v1
+
+springdoc:
+  api-docs:
+    enabled: false
+    path: /api-docs
+  swagger-ui:
+    enabled: false
+    tags-sorter: alpha
+
+# Authentication configuration (oauth2-proxy)
+auth:
+  enabled: true
+  login-url: /oauth2/start
+  logout-url: /oauth2/sign_out
+  provider: oauth2-proxy
+  # Development mode - set to true to bypass oauth2-proxy
+  dev:
+    enabled: false
+    username: dev-user
+    email: dev@localhost
+    groups: developers,security-team
+    display-name: Development User

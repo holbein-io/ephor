@@ -1,0 +1,8 @@
+**/build/
+**/node_modules/
+**/.gradle/
+**/dist/
+**/*.log
+docs/
+troubleshoot/
+.git/

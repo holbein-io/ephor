@@ -1,0 +1,25 @@
+Ephor has been deployed successfully.
+
+{{- if .Values.ingress.enabled }}
+
+Access Ephor via your ingress:
+{{- range .Values.ingress.hosts }}
+  http{{ if $.Values.ingress.tls }}s{{ end }}://{{ .host }}
+{{- end }}
+
+{{- else }}
+
+To access the dashboard, run:
+  kubectl port-forward svc/{{ include "ephor.dashboard.fullname" . }} 8080:{{ .Values.dashboard.service.port }} -n {{ .Release.Namespace }}
+
+Then open http://localhost:8080 in your browser.
+
+To access the API directly, run:
+  kubectl port-forward svc/{{ include "ephor.api.fullname" . }} 8081:{{ .Values.api.service.port }} -n {{ .Release.Namespace }}
+
+{{- end }}
+
+{{- if not .Values.postgresql.enabled }}
+
+Using external database at {{ .Values.externalDatabase.host }}:{{ .Values.externalDatabase.port }}/{{ .Values.externalDatabase.database }}
+{{- end }}

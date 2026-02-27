@@ -1,0 +1,42 @@
+plugins {
+    id 'com.github.node-gradle.node' version '7.1.0'
+}
+
+node {
+    version = '22.0.0'
+    download = true
+    workDir = file("${project.projectDir}/.gradle/nodejs")
+    npmWorkDir = file("${project.projectDir}/.gradle/npm")
+    nodeProjectDir = file("${project.projectDir}/app")
+}
+
+tasks.register('buildFrontend', NpmTask) {
+    dependsOn npmInstall
+    args = ['run', 'build']
+}
+
+tasks.register('devFrontend', NpmTask) {
+    dependsOn npmInstall
+    args = ['run', 'dev']
+}
+
+tasks.register('testFrontend', NpmTask) {
+    dependsOn npmInstall
+    args = ['run', 'test']
+}
+
+tasks.register('lintFrontend', NpmTask) {
+    dependsOn npmInstall
+    args = ['run', 'lint']
+}
+
+tasks.register('build') {
+    dependsOn buildFrontend
+}
+
+tasks.register('clean') {
+    doLast {
+        delete "${project.projectDir}/app/node_modules"
+        delete "${project.projectDir}/app/dist"
+    }
+}
