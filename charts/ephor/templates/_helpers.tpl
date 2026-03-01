@@ -217,6 +217,7 @@ Pod security context (OpenShift-compatible)
 */}}
 {{- define "ephor.podSecurityContext" -}}
 runAsNonRoot: true
+runAsUser: 100
 seccompProfile:
   type: RuntimeDefault
 {{- end }}

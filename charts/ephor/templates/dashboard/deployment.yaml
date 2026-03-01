@@ -27,7 +27,7 @@ spec:
             {{- include "ephor.containerSecurityContext" . | nindent 12 }}
           ports:
             - name: http
-              containerPort: 80
+              containerPort: 8080
               protocol: TCP
           volumeMounts:
             - name: nginx-config

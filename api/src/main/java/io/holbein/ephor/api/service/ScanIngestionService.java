@@ -5,17 +5,9 @@ import io.holbein.ephor.api.dto.ScanIngestRequest;
 import io.holbein.ephor.api.dto.ScanIngestResponse;
 import io.holbein.ephor.api.dto.WorkloadData;
 import io.holbein.ephor.api.dto.vulnerability.VulnerabilityData;
-import io.holbein.ephor.api.entity.Container;
-import io.holbein.ephor.api.entity.Scan;
-import io.holbein.ephor.api.entity.Vulnerability;
-import io.holbein.ephor.api.entity.VulnerabilityInstance;
-import io.holbein.ephor.api.entity.Workload;
+import io.holbein.ephor.api.entity.*;
 import io.holbein.ephor.api.model.enums.SeverityLevel;
-import io.holbein.ephor.api.repositories.ContainerRepository;
-import io.holbein.ephor.api.repositories.ScanRepository;
-import io.holbein.ephor.api.repositories.VulnerabilityInstanceRepository;
-import io.holbein.ephor.api.repositories.VulnerabilityRepository;
-import io.holbein.ephor.api.repositories.WorkloadRepository;
+import io.holbein.ephor.api.repositories.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -160,17 +152,19 @@ public class ScanIngestionService {
         int reopenedCount = 0;
         List<Long> currentVulnerabilityIds = new ArrayList<>();
 
-        for (VulnerabilityData vulnData : containerData.getVulnerabilities()) {
-            VulnerabilityProcessingResult result = processVulnerability(scan, container, vulnData);
-            currentVulnerabilityIds.add(result.vulnerabilityId);
-            vulnerabilityCount++;
+        if (containerData.getVulnerabilities() != null) {
+            for (VulnerabilityData vulnData : containerData.getVulnerabilities()) {
+                VulnerabilityProcessingResult result = processVulnerability(scan, container, vulnData);
+                currentVulnerabilityIds.add(result.vulnerabilityId);
+                vulnerabilityCount++;
 
-            if (vulnData.getSeverity() == SeverityLevel.CRITICAL) {
-                criticalCount++;
-            }
+                if (vulnData.getSeverity() == SeverityLevel.CRITICAL) {
+                    criticalCount++;
+                }
 
-            if (result.reopened) {
-                reopenedCount++;
+                if (result.reopened) {
+                    reopenedCount++;
+                }
             }
         }
 
@@ -273,7 +267,14 @@ public class ScanIngestionService {
                 containerId, scanId, currentVulnerabilityIds, reason);
     }
 
-    private record WorkloadProcessingResult(int vulnerabilityCount, int criticalCount, int autoResolvedCount, int reopenedCount) {}
-    private record ContainerProcessingResult(int vulnerabilityCount, int criticalCount, int autoResolvedCount, int reopenedCount) {}
-    private record VulnerabilityProcessingResult(Long vulnerabilityId, boolean reopened) {}
+    private record WorkloadProcessingResult(int vulnerabilityCount, int criticalCount, int autoResolvedCount,
+                                            int reopenedCount) {
+    }
+
+    private record ContainerProcessingResult(int vulnerabilityCount, int criticalCount, int autoResolvedCount,
+                                             int reopenedCount) {
+    }
+
+    private record VulnerabilityProcessingResult(Long vulnerabilityId, boolean reopened) {
+    }
 }
