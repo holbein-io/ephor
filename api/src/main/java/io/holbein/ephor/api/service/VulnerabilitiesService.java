@@ -84,6 +84,19 @@ public class VulnerabilitiesService {
                 })
                 .toList();
 
+        // Compute aggregated status from all instances
+        Set<String> allStatuses = v.getInstances().stream()
+                .map(vi -> vi.getStatus() != null ? vi.getStatus().name() : "open")
+                .collect(java.util.stream.Collectors.toSet());
+        String status;
+        if (allStatuses.size() == 1) {
+            status = allStatuses.iterator().next();
+        } else if (allStatuses.size() > 1) {
+            status = "mixed";
+        } else {
+            status = "open";
+        }
+
         return new VulnerabilityDetailResponse(
                 v.getId(),
                 v.getCveId(),
@@ -99,6 +112,7 @@ public class VulnerabilitiesService {
                 v.getFirstDetected(),
                 v.getLastSeen(),
                 workloads.size(),
+                status,
                 workloads
         );
     }

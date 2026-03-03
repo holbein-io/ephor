@@ -21,7 +21,7 @@ export function Vulnerabilities() {
     activeFilterLabels
   } = useUrlFilters();
 
-  const { setListItems } = useVulnerabilityList();
+  const { setListItems, setPageLoader } = useVulnerabilityList();
   const [viewMode, setViewMode] = useState<'table' | 'infinite'>(() => {
     return (localStorage.getItem('vuln-view-mode') as 'table' | 'infinite') || 'infinite';
   });
@@ -53,6 +53,14 @@ export function Vulnerabilities() {
       setListItems(allVulnerabilities.map((v: any) => ({ id: v.id, cve_id: v.cve_id })));
     }
   }, [allVulnerabilities, setListItems]);
+
+  useEffect(() => {
+    setPageLoader({
+      fetchNextPage: () => fetchNextPage(),
+      hasNextPage: hasNextPage ?? false
+    });
+    return () => setPageLoader(null);
+  }, [fetchNextPage, hasNextPage, setPageLoader]);
 
   useEffect(() => {
     localStorage.setItem('vuln-view-mode', viewMode);
