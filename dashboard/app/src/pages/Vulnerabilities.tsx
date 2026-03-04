@@ -7,7 +7,6 @@ import { FilterPresets } from '../components/FilterPresets';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { useUrlFilters } from '../hooks/useUrlFilters';
 import { useVulnerabilityList } from '../contexts/VulnerabilityListContext';
-import { useInfiniteVulnerabilities } from '../hooks/useInfiniteVulnerabilities';
 import { VulnerabilityFilters as FiltersType } from '../types';
 import { List, Table2 } from 'lucide-react';
 
@@ -21,7 +20,17 @@ export function Vulnerabilities() {
     activeFilterLabels
   } = useUrlFilters();
 
-  const { setListItems, setPageLoader } = useVulnerabilityList();
+  const {
+    setQueryFilters,
+    allVulnerabilities,
+    isLoading,
+    error,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+    totalCount
+  } = useVulnerabilityList();
+
   const [viewMode, setViewMode] = useState<'table' | 'infinite'>(() => {
     return (localStorage.getItem('vuln-view-mode') as 'table' | 'infinite') || 'infinite';
   });
@@ -32,35 +41,10 @@ export function Vulnerabilities() {
     return rest;
   }, [filters]);
 
-  const {
-    data: infiniteData,
-    isLoading: infiniteLoading,
-    error: infiniteError,
-    hasNextPage,
-    isFetchingNextPage,
-    fetchNextPage
-  } = useInfiniteVulnerabilities(infiniteFilters);
-
-  const allVulnerabilities = useMemo(() => {
-    if (!infiniteData?.pages) return [];
-    return infiniteData.pages.flatMap(page => page.data);
-  }, [infiniteData?.pages]);
-
-  const totalCount = infiniteData?.pages[0]?.pagination.total;
-
+  // Sync URL-derived filters into the context
   useEffect(() => {
-    if (allVulnerabilities.length > 0) {
-      setListItems(allVulnerabilities.map((v: any) => ({ id: v.id, cve_id: v.cve_id })));
-    }
-  }, [allVulnerabilities, setListItems]);
-
-  useEffect(() => {
-    setPageLoader({
-      fetchNextPage: () => fetchNextPage(),
-      hasNextPage: hasNextPage ?? false
-    });
-    return () => setPageLoader(null);
-  }, [fetchNextPage, hasNextPage, setPageLoader]);
+    setQueryFilters(infiniteFilters);
+  }, [infiniteFilters, setQueryFilters]);
 
   useEffect(() => {
     localStorage.setItem('vuln-view-mode', viewMode);
@@ -77,9 +61,6 @@ export function Vulnerabilities() {
       page: 1
     });
   };
-
-  const isLoading = infiniteLoading;
-  const error = infiniteError;
 
   if (error) {
     return (
