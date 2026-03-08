@@ -352,12 +352,12 @@ export function TriageDecisionMaker({
               </div>
 
               {/* Decision Buttons */}
-              <div className="flex gap-2 pt-2">
+              <div className="grid grid-cols-2 gap-2 pt-2">
                 <Button
                   size="sm"
                   variant="primary"
                   onClick={() => handleDecision('needs_remediation')}
-                  className="flex-1 bg-success hover:bg-success/80 border-success"
+                  className="bg-success hover:bg-success/80 border-success"
                 >
                   <CheckCircle className="w-4 h-4 mr-1" />
                   Needs Remediation
@@ -366,7 +366,7 @@ export function TriageDecisionMaker({
                   size="sm"
                   variant="secondary"
                   onClick={() => handleDecision('accepted_risk')}
-                  className="flex-1 bg-warning hover:bg-warning/80 text-white"
+                  className="bg-warning hover:bg-warning/80 text-white"
                 >
                   <AlertTriangle className="w-4 h-4 mr-1" />
                   Accept Risk
@@ -375,7 +375,6 @@ export function TriageDecisionMaker({
                   size="sm"
                   variant="secondary"
                   onClick={() => handleDecision('false_positive')}
-                  className="flex-1"
                 >
                   <X className="w-4 h-4 mr-1" />
                   False Positive

@@ -8,4 +8,6 @@ import lombok.Data;
 public class UpdateStatusRequest {
     @NotNull(message = "Status is required")
     private InstanceStatus status;
+
+    private boolean applyToAll = false;
 }

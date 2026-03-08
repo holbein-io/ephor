@@ -124,7 +124,7 @@ export const triageService = {
    * Get preparations for a session
    */
   async getSessionPreparations(sessionId: number): Promise<TriagePreparation[]> {
-    return apiClient.get(`/triage/sessions/${sessionId}/preparations`);
+    return apiClient.get(`/triage/sessions/${sessionId}/preparations?include_workloads=true`);
   },
 
   /**

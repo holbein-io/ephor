@@ -49,6 +49,7 @@ public class TriageService {
     private final TriageDecisionRepository triageDecisionRepository;
     private final TriageBulkOperationRepository triageBulkOperationRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
+    private final VulnerabilityInstanceRepository vulnerabilityInstanceRepository;
 
     @Transactional(readOnly = true)
     public List<SessionResponse> getTriageSessions(SessionStatus status) {
@@ -360,6 +361,12 @@ public class TriageService {
             triageDecisionRepository.save(decision);
         }
 
+        // Update open vulnerability instances to triaged status
+        vulnerabilityInstanceRepository.updateStatusByVulnerabilityIdAndCurrentStatus(
+                request.vulnerabilityId(),
+                VulnerabilityInstance.InstanceStatus.open,
+                VulnerabilityInstance.InstanceStatus.triaged);
+
         return DecisionMapper.toResponse(decision);
     }
 
@@ -464,6 +471,13 @@ public class TriageService {
             }
 
             triageDecisionRepository.save(decision);
+
+            // Update open vulnerability instances to triaged status
+            vulnerabilityInstanceRepository.updateStatusByVulnerabilityIdAndCurrentStatus(
+                    vulnId,
+                    VulnerabilityInstance.InstanceStatus.open,
+                    VulnerabilityInstance.InstanceStatus.triaged);
+
             decidedVulnIds.add(vulnId);
             affectedVulnIds.add((int) vulnId);
 

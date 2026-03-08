@@ -13,137 +13,127 @@ const steps = [
   {
     id: 'PREPARING',
     name: 'Preparation',
-    description: 'Add vulnerabilities to review',
-    icon: ClipboardList
+    icon: ClipboardList,
   },
   {
     id: 'ACTIVE',
     name: 'Active Session',
-    description: 'Make triage decisions',
-    icon: PlayCircle
+    icon: PlayCircle,
   },
   {
     id: 'COMPLETED',
     name: 'Completed',
-    description: 'Session finished',
-    icon: CheckCircle2
-  }
+    icon: CheckCircle2,
+  },
 ];
 
-function getStepState(stepId: string, currentStatus: TriageStatus): 'completed' | 'current' | 'upcoming' {
+function getStepState(
+  stepId: string,
+  currentStatus: TriageStatus
+): 'completed' | 'current' | 'upcoming' {
   const stepOrder = ['PREPARING', 'ACTIVE', 'COMPLETED'];
   const currentIndex = stepOrder.indexOf(currentStatus);
   const stepIndex = stepOrder.indexOf(stepId);
 
-  if (currentStatus === 'CANCELLED') {
-    return 'upcoming';
-  }
-
-  if (stepIndex < currentIndex) {
-    return 'completed';
-  } else if (stepIndex === currentIndex) {
-    return 'current';
-  }
+  if (currentStatus === 'CANCELLED') return 'upcoming';
+  if (stepIndex < currentIndex) return 'completed';
+  if (stepIndex === currentIndex) return 'current';
   return 'upcoming';
 }
 
 export function TriageWorkflowStepper({
   currentStatus,
   preparationsCount = 0,
-  decisionsCount = 0
+  decisionsCount = 0,
 }: TriageWorkflowStepperProps) {
   return (
     <nav aria-label="Triage workflow progress" className="mb-6">
-      <ol className="flex items-center">
+      <ol className="flex items-start">
         {steps.map((step, stepIdx) => {
           const state = getStepState(step.id, currentStatus);
           const Icon = step.icon;
+          const isLast = stepIdx === steps.length - 1;
+
+          // Build the counter pill content
+          let counterText: string | null = null;
+          if (step.id === 'PREPARING' && preparationsCount > 0) {
+            counterText =
+              state === 'current'
+                ? `${preparationsCount} added`
+                : state === 'completed'
+                  ? `${preparationsCount} prepared`
+                  : null;
+          }
+          if (step.id === 'ACTIVE' && state === 'current') {
+            counterText = `${decisionsCount} decisions`;
+          }
 
           return (
             <li
               key={step.id}
-              className={cn(
-                'relative flex-1',
-                stepIdx !== steps.length - 1 ? 'pr-8' : ''
-              )}
+              className={cn('flex items-start', isLast ? '' : 'flex-1')}
             >
-              {/* Connector line */}
-              {stepIdx !== steps.length - 1 && (
+              {/* Step indicator + label */}
+              <div className="flex flex-col items-center min-w-[80px]">
+                {/* Circle */}
                 <div
-                  className="absolute top-5 left-[calc(50%+20px)] w-[calc(100%-40px)] h-0.5"
-                  aria-hidden="true"
-                >
-                  <div
-                    className={cn(
-                      'h-full transition-colors duration-300',
-                      state === 'completed' ? 'bg-success/100' : 'bg-bg-tertiary'
-                    )}
-                  />
-                </div>
-              )}
-
-              <div className="flex flex-col items-center group">
-                {/* Step circle */}
-                <span
                   className={cn(
-                    'relative z-10 flex h-10 w-10 items-center justify-center rounded-full border-2 transition-all duration-300',
-                    state === 'completed' && 'bg-success/100 border-success',
-                    state === 'current' && 'bg-accent/100 border-accent ring-4 ring-accent/20',
-                    state === 'upcoming' && 'bg-bg-card border-border'
+                    'relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300',
+                    state === 'completed' &&
+                      'bg-success text-white',
+                    state === 'current' &&
+                      'bg-accent text-white shadow-[0_0_0_4px_rgba(196,151,59,0.15)]',
+                    state === 'upcoming' &&
+                      'bg-bg-tertiary text-text-tertiary border border-border'
                   )}
                 >
                   {state === 'completed' ? (
-                    <Check className="h-5 w-5 text-white" aria-hidden="true" />
+                    <Check className="h-4 w-4" strokeWidth={2.5} />
                   ) : (
-                    <Icon
-                      className={cn(
-                        'h-5 w-5',
-                        state === 'current' ? 'text-white' : 'text-text-tertiary'
-                      )}
-                      aria-hidden="true"
-                    />
+                    <Icon className="h-4 w-4" />
                   )}
-                </span>
+                </div>
 
-                {/* Step label */}
+                {/* Label */}
                 <span
                   className={cn(
-                    'mt-2 text-sm font-medium transition-colors',
+                    'mt-2 text-xs font-semibold tracking-wide text-center leading-tight',
                     state === 'completed' && 'text-success',
-                    state === 'current' && 'text-accent',
+                    state === 'current' && 'text-text-primary',
                     state === 'upcoming' && 'text-text-tertiary'
                   )}
                 >
                   {step.name}
                 </span>
 
-                {/* Step description */}
-                <span
-                  className={cn(
-                    'mt-0.5 text-xs text-center max-w-[120px]',
-                    state === 'current' ? 'text-accent' : 'text-text-tertiary'
-                  )}
-                >
-                  {step.description}
-                </span>
-
-                {/* Progress indicator */}
-                {step.id === 'PREPARING' && state === 'current' && preparationsCount > 0 && (
-                  <span className="mt-1 px-2 py-0.5 text-xs font-semibold bg-accent/15 text-accent rounded-full">
-                    {preparationsCount} added
-                  </span>
-                )}
-                {step.id === 'ACTIVE' && state === 'current' && (
-                  <span className="mt-1 px-2 py-0.5 text-xs font-semibold bg-accent/15 text-accent rounded-full">
-                    {decisionsCount} decisions
-                  </span>
-                )}
-                {step.id === 'PREPARING' && state === 'completed' && preparationsCount > 0 && (
-                  <span className="mt-1 px-2 py-0.5 text-xs font-semibold bg-success/15 text-success rounded-full">
-                    {preparationsCount} prepared
+                {/* Counter pill */}
+                {counterText && (
+                  <span
+                    className={cn(
+                      'mt-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full',
+                      state === 'current'
+                        ? 'bg-accent/15 text-accent'
+                        : 'bg-success/15 text-success'
+                    )}
+                  >
+                    {counterText}
                   </span>
                 )}
               </div>
+
+              {/* Connector line */}
+              {!isLast && (
+                <div className="flex-1 flex items-center pt-[18px] px-3">
+                  <div
+                    className={cn(
+                      'h-[2px] w-full rounded-full transition-colors duration-500',
+                      state === 'completed'
+                        ? 'bg-success'
+                        : 'bg-border'
+                    )}
+                  />
+                </div>
+              )}
             </li>
           );
         })}

@@ -4,13 +4,10 @@ import { TriageSession } from '../types';
 // State interface for the triage feature
 export interface TriageState {
   currentSession: TriageSession | null;
-  selectedDays: number;
-  selectedNamespace: string;
   prepLead: string;
   prepNotes: string;
   sessionNotes: string;
   attendees: string[];
-  selectedSeverities: string[];
   selectedVulns: Set<number>;
   showCommentModal: { vulnId: number; vulnCve: string } | null;
   commentText: string;
@@ -27,8 +24,6 @@ export interface TriageState {
 // Action types for the reducer
 export type TriageAction =
   | { type: 'SET_CURRENT_SESSION'; payload: TriageSession | null }
-  | { type: 'SET_SELECTED_DAYS'; payload: number }
-  | { type: 'SET_SELECTED_NAMESPACE'; payload: string }
   | { type: 'SET_PREP_LEAD'; payload: string }
   | { type: 'SET_PREP_NOTES'; payload: string }
   | { type: 'SET_SESSION_NOTES'; payload: string }
@@ -36,8 +31,6 @@ export type TriageAction =
   | { type: 'ADD_ATTENDEE'; payload: string }
   | { type: 'REMOVE_ATTENDEE'; payload: number }
   | { type: 'UPDATE_ATTENDEE'; payload: { index: number; value: string } }
-  | { type: 'SET_SELECTED_SEVERITIES'; payload: string[] }
-  | { type: 'TOGGLE_SEVERITY'; payload: string }
   | { type: 'ADD_SELECTED_VULN'; payload: number }
   | { type: 'REMOVE_SELECTED_VULN'; payload: number }
   | { type: 'CLEAR_SELECTED_VULNS' }
@@ -56,13 +49,10 @@ export type TriageAction =
 // Initial state
 export const initialTriageState: TriageState = {
   currentSession: null,
-  selectedDays: 7,
-  selectedNamespace: '',
   prepLead: '',
   prepNotes: '',
   sessionNotes: '',
   attendees: [''],
-  selectedSeverities: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
   selectedVulns: new Set(),
   showCommentModal: null,
   commentText: '',
@@ -86,12 +76,6 @@ export function triageReducer(state: TriageState, action: TriageAction): TriageS
   switch (action.type) {
     case 'SET_CURRENT_SESSION':
       return { ...state, currentSession: action.payload };
-
-    case 'SET_SELECTED_DAYS':
-      return { ...state, selectedDays: action.payload };
-
-    case 'SET_SELECTED_NAMESPACE':
-      return { ...state, selectedNamespace: action.payload };
 
     case 'SET_PREP_LEAD':
       return { ...state, prepLead: action.payload };
@@ -117,17 +101,6 @@ export function triageReducer(state: TriageState, action: TriageAction): TriageS
         attendees: state.attendees.map((a, i) =>
           i === action.payload.index ? action.payload.value : a
         )
-      };
-
-    case 'SET_SELECTED_SEVERITIES':
-      return { ...state, selectedSeverities: action.payload };
-
-    case 'TOGGLE_SEVERITY':
-      return {
-        ...state,
-        selectedSeverities: state.selectedSeverities.includes(action.payload)
-          ? state.selectedSeverities.filter(s => s !== action.payload)
-          : [...state.selectedSeverities, action.payload]
       };
 
     case 'ADD_SELECTED_VULN':

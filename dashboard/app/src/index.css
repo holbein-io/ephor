@@ -35,7 +35,7 @@
 
   /* === Fonts === */
   --font-display: "Cormorant Garamond", "Georgia", serif;
-  --font-body: "Hanken Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
   --font-mono: "IBM Plex Mono", "Menlo", monospace;
 
   /* === Easing === */

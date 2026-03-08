@@ -41,7 +41,7 @@ public class VulnerabilitiesController {
     public Map<String, String> updateStatus(
             @PathVariable long id,
             @Valid @RequestBody UpdateStatusRequest request) {
-        int updateCount = vulnerabilitiesService.updateVulnerabilityStatus(id, request.getStatus());
+        int updateCount = vulnerabilitiesService.updateVulnerabilityStatus(id, request.getStatus(), request.isApplyToAll());
         if (updateCount <= 0) {
             throw ResourceNotFoundException.vulnerability(id);
         }

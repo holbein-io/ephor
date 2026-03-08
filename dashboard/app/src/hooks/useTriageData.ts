@@ -10,15 +10,6 @@ export function useTriageSessions() {
   });
 }
 
-// Hook for fetching triage report data
-export function useTriageReport(days: number, namespace?: string, enabled = true) {
-  return useQuery({
-    queryKey: ['triage-report', days, namespace],
-    queryFn: () => triageService.getTriageReport(days, namespace),
-    enabled
-  });
-}
-
 // Hook for fetching preparations for a session
 export function useTriagePreparations(sessionId: number | undefined, enabled = false) {
   return useQuery({

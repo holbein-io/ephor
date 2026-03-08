@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useState } from 'react';
 import { TriageSessionManager } from '../components/triage/TriageSessionManager';
 import { TriagePreparation } from '../components/triage/TriagePreparation';
 import { TriageDecisionMaker } from '../components/triage/TriageDecisionMaker';
@@ -7,7 +7,6 @@ import { TriageSessionReview } from '../components/triage/TriageSessionReview';
 import { TriageWorkflowStepper } from '../components/triage/TriageWorkflowStepper';
 import {
   useTriageSessions,
-  useTriageReport,
   useTriagePreparations,
   useTriageBulkPlans,
   useTriageDecisions,
@@ -35,15 +34,10 @@ export function Triage() {
 
   // Use the custom state management hook with user's display name as initial prepLead
   const { state, dispatch } = useTriageState({ prepLead: displayName });
+  const [prepMaximized, setPrepMaximized] = useState(false);
 
   // Data fetching hooks
   const { data: sessions, isLoading: sessionsLoading } = useTriageSessions();
-
-  const { data: triageReport, isLoading: reportLoading } = useTriageReport(
-    state.selectedDays,
-    state.selectedNamespace || undefined,
-    !state.currentSession || state.currentSession.status === 'PREPARING'
-  );
 
   const { data: preparations, isLoading: preparationsLoading } = useTriagePreparations(
     state.currentSession?.id,
@@ -74,28 +68,6 @@ export function Triage() {
   const createDecisionMutation = useCreateTriageDecision();
   const createBulkPlanMutation = useCreateTriageBulkPlan();
   const executeBulkPlanMutation = useExecuteBulkPlan();
-
-  // Group vulnerabilities by CVE ID for the preparation view
-  const groupedVulnerabilities = useMemo(() => {
-    if (!triageReport?.vulnerabilities) return [];
-
-    const grouped = new Map<string, Vulnerability[]>();
-
-    triageReport.vulnerabilities
-      .filter(v => state.selectedSeverities.includes(v.severity))
-      .forEach(vuln => {
-        const existing = grouped.get(vuln.cve_id) || [];
-        grouped.set(vuln.cve_id, [...existing, vuln as any]);
-      });
-
-    return Array.from(grouped.entries()).map(([cveId, vulns]) => ({
-      cveId,
-      vulnerabilities: vulns,
-      totalWorkloads: vulns.reduce((sum, v) => sum + (Number(v.affected_workloads) || 0), 0),
-      uniqueVersions: [...new Set(vulns.map(v => v.package_version).filter(Boolean))],
-      representative: vulns[0]
-    }));
-  }, [triageReport, state.selectedSeverities]);
 
   // Callbacks
   const handleSelectSession = useCallback((session: TriageSession) => {
@@ -130,10 +102,6 @@ export function Triage() {
     createPreparationMutation.mutate(prepData);
   }, [state.currentSession, state.prepLead, createPreparationMutation]);
 
-  const handleToggleSeverity = useCallback((severity: string) => {
-    dispatch({ type: 'TOGGLE_SEVERITY', payload: severity });
-  }, [dispatch]);
-
   const handleCreateBulkPlan = useCallback((plan: any) => {
     if (!state.currentSession) return;
 
@@ -142,7 +110,7 @@ export function Triage() {
       created_by: state.prepLead || 'System',
       ...plan
     });
-  }, [state.currentSession, createBulkPlanMutation]);
+  }, [state.currentSession, state.prepLead, createBulkPlanMutation]);
 
   const handleExecuteBulkPlan = useCallback((planId: number) => {
     if (!state.currentSession) return;
@@ -186,7 +154,7 @@ export function Triage() {
       target_date: decision.target_date,
       priority: decision.priority
     });
-  }, [state.currentSession, createDecisionMutation]);
+  }, [state.currentSession, state.prepLead, createDecisionMutation]);
 
   return (
     <div className="space-y-6">
@@ -253,33 +221,32 @@ export function Triage() {
         </Card>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className={prepMaximized ? '' : 'grid grid-cols-1 lg:grid-cols-3 gap-6'}>
         {/* Sessions List */}
-        <div className="lg:col-span-1">
-          <TriageSessionManager
-            sessions={sessions as any}
-            currentSession={state.currentSession}
-            isLoading={sessionsLoading}
-            hasVulnerabilities={!reportLoading && (triageReport?.total ?? 0) > 0}
-            onSelectSession={handleSelectSession}
-            onCreateSession={handleCreateSession}
-          />
-        </div>
+        {!prepMaximized && (
+          <div className="lg:col-span-1">
+            <TriageSessionManager
+              sessions={sessions as any}
+              currentSession={state.currentSession}
+              isLoading={sessionsLoading}
+              onSelectSession={handleSelectSession}
+              onCreateSession={handleCreateSession}
+            />
+          </div>
+        )}
 
         {/* Main Content Area */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className={prepMaximized ? '' : 'lg:col-span-2 space-y-6'}>
           {state.currentSession ? (
             <>
               {/* Preparation Phase */}
               {state.currentSession.status === 'PREPARING' && (
                 <TriagePreparation
-                  vulnerabilities={groupedVulnerabilities as any}
                   preparations={preparations as any}
-                  isLoading={reportLoading || preparationsLoading}
                   sessionId={state.currentSession.id}
-                  selectedSeverities={state.selectedSeverities}
-                  onToggleSeverity={handleToggleSeverity}
                   onAddToSession={handleAddToSession}
+                  maximized={prepMaximized}
+                  onToggleMaximize={() => setPrepMaximized(prev => !prev)}
                 />
               )}
 
