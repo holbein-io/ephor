@@ -118,12 +118,24 @@ public class VulnerabilitiesService {
     }
 
     @Transactional
-    public int updateVulnerabilityStatus(long id, InstanceStatus status) {
+    public int updateVulnerabilityStatus(long id, InstanceStatus status, boolean applyToAll) {
         int updatedCount;
-        if (RESOLVED_STATUSES.contains(status)) {
-            updatedCount = vulnerabilityInstanceRepository.updateStatusWithResolvedAt(id, status);
+        // The applyToAll guard only protects resolved/terminal
+        if (applyToAll || status == InstanceStatus.open) {
+            if (RESOLVED_STATUSES.contains(status)) {
+                updatedCount = vulnerabilityInstanceRepository.updateStatusWithResolvedAt(id, status);
+            } else {
+                updatedCount = vulnerabilityInstanceRepository.updateStatusByVulnerabilityId(id, status);
+            }
         } else {
-            updatedCount = vulnerabilityInstanceRepository.updateStatusByVulnerabilityId(id, status);
+            // Only update instances that are currently open
+            if (RESOLVED_STATUSES.contains(status)) {
+                updatedCount = vulnerabilityInstanceRepository.updateStatusWithResolvedAtByCurrentStatus(
+                        id, InstanceStatus.open, status);
+            } else {
+                updatedCount = vulnerabilityInstanceRepository.updateStatusByVulnerabilityIdAndCurrentStatus(
+                        id, InstanceStatus.open, status);
+            }
         }
         return updatedCount;
     }

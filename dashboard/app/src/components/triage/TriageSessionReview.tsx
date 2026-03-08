@@ -3,7 +3,7 @@ import { AlertTriangle, Shield, MessageSquare, User, Calendar, FileText, Externa
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { SEVERITY_COLORS } from '../../constants/colors';
-import { formatDate } from '../../utils';
+import { cn, formatDate } from '../../utils';
 
 interface TriageDecision {
   id: number;
@@ -11,19 +11,20 @@ interface TriageDecision {
   vulnerability_id: number;
   status: 'accepted_risk' | 'false_positive' | 'needs_remediation' | 'duplicate';
   notes?: string;
+  decided_by?: string;
+  decided_at?: string;
   assigned_to?: string;
   target_date?: string;
   priority?: string;
-  created_at: string;
-  updated_at: string;
-  // Joined data from vulnerability
+  // Denormalized from Vulnerability
   cve_id?: string;
   package_name?: string;
   package_version?: string;
   severity?: string;
   title?: string;
   fixed_version?: string;
-  // Joined data from remediation
+  affected_workloads?: number;
+  // Remediation reference
   remediation_id?: number;
   remediation_status?: string;
   remediation_priority?: string;
@@ -63,21 +64,6 @@ export function TriageSessionReview({
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'accepted_risk':
-        return 'bg-warning/15 text-warning border-warning/30';
-      case 'false_positive':
-        return 'bg-bg-tertiary text-text-primary border-border';
-      case 'needs_remediation':
-        return 'bg-success/15 text-success border-success/30';
-      case 'duplicate':
-        return 'bg-purple-500/15 text-purple-400 border-purple-500/30';
-      default:
-        return 'bg-bg-tertiary text-text-primary border-border';
-    }
-  };
-
   if (isLoadingDecisions || isLoadingPreparations) {
     return (
       <Card>
@@ -113,26 +99,26 @@ export function TriageSessionReview({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-text-primary">{totalDecisions}</div>
-              <div className="text-sm text-text-tertiary">Total Decisions</div>
+              <div className="text-xs sm:text-sm text-text-tertiary">Total</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-success">{remediationCount}</div>
-              <div className="text-sm text-text-tertiary">Need Remediation</div>
+              <div className="text-xs sm:text-sm text-text-tertiary">Remediation</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-warning">{acceptedRiskCount}</div>
-              <div className="text-sm text-text-tertiary">Accepted Risk</div>
+              <div className="text-xs sm:text-sm text-text-tertiary">Accepted</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-text-secondary">{falsePositiveCount}</div>
-              <div className="text-sm text-text-tertiary">False Positives</div>
+              <div className="text-xs sm:text-sm text-text-tertiary">False Pos.</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-400">{duplicateCount}</div>
-              <div className="text-sm text-text-tertiary">Duplicates</div>
+              <div className="text-xs sm:text-sm text-text-tertiary">Duplicates</div>
             </div>
           </div>
         </CardContent>
@@ -145,10 +131,20 @@ export function TriageSessionReview({
         return (
           <Card key={status}>
             <CardHeader>
-              <CardTitle className="text-lg">
-                <Badge variant="info" className={`text-xs ${getStatusColor(status)}`}>
-                  {getStatusLabel(status)} ({statusDecisions.length})
-                </Badge>
+              <CardTitle className="text-lg flex items-center gap-3">
+                <span
+                  className={cn(
+                    'w-2 h-2 rounded-full shrink-0',
+                    status === 'needs_remediation' && 'bg-success',
+                    status === 'accepted_risk' && 'bg-warning',
+                    status === 'false_positive' && 'bg-text-secondary',
+                    status === 'duplicate' && 'bg-purple-400'
+                  )}
+                />
+                <span>{getStatusLabel(status)}</span>
+                <span className="text-sm font-normal text-text-tertiary">
+                  {statusDecisions.length}
+                </span>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -190,7 +186,7 @@ export function TriageSessionReview({
                           </div>
                         </div>
                         <div className="text-xs text-text-tertiary">
-                          {formatDate(decision.created_at)}
+                          {decision.decided_at ? formatDate(decision.decided_at) : ''}
                         </div>
                       </div>
 

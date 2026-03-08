@@ -30,8 +30,8 @@ export const vulnerabilityService = {
   /**
    * Update vulnerability status
    */
-  async updateStatus(id: number, status: string): Promise<{ message: string }> {
-    return apiClient.patch(`/vulnerabilities/${id}/status`, { status });
+  async updateStatus(id: number, status: string, applyToAll = false): Promise<{ message: string }> {
+    return apiClient.patch(`/vulnerabilities/${id}/status`, { status, apply_to_all: applyToAll });
   },
 
   /**

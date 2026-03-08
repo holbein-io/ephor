@@ -8,7 +8,7 @@ interface SeverityBadgeProps {
 
 export function SeverityBadge({ severity, className }: SeverityBadgeProps) {
   return (
-    <Badge className={`${getSeverityColor(severity)} ${className}`}>
+    <Badge className={`${getSeverityColor(severity)} ${className || ''}`}>
       {severity}
     </Badge>
   );
