@@ -72,6 +72,22 @@ export function truncateText(text: string, maxLength: number): string {
   return text.slice(0, maxLength) + '...';
 }
 
+export function shortenImageName(fullName: string): string {
+  const parts = fullName.split('/');
+  if (parts.length >= 3) return parts.slice(-2).join('/');
+  if (parts.length === 2 && parts[0].includes('.')) return parts[1];
+  return fullName;
+}
+
+export function formatImageTag(tag: string): string {
+  if (tag.length === 40) {
+    return tag.substring(0, 8);
+  } else if (tag.startsWith('sha256:')) {
+    return 'sha:' + tag.substring(7, 15);
+  }
+  return tag;
+}
+
 export function pluralize(count: number, singular: string, plural?: string): string {
   if (count === 1) return `${count} ${singular}`;
   return `${count} ${plural || singular + 's'}`;
