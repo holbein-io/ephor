@@ -24,6 +24,7 @@ public class EscalationsService {
     private final EscalationRepository escalationRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
 
+    @Transactional(readOnly = true)
     public List<EscalationResponse> getAllEscalations() {
         return escalationRepository.findAll()
                 .stream()
