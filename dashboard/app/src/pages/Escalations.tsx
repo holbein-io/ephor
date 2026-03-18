@@ -6,9 +6,12 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { escalationService } from '../services/api';
 import { formatRelativeTime } from '../utils';
+import { useUser } from '../contexts/UserContext';
 
 export function Escalations() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const { hasAnyPermission } = useUser();
+  const canManageEscalations = hasAnyPermission('MANAGE_ESCALATIONS', 'MANAGE_ADMIN');
 
   const { data: escalations, isLoading, error, refetch } = useQuery({
     queryKey: ['escalations'],
@@ -217,7 +220,7 @@ export function Escalations() {
 
                   {/* Actions */}
                   <div className="flex flex-col space-y-2">
-                    {escalation.status === 'pending' && (
+                    {canManageEscalations && escalation.status === 'pending' && (
                       <Button
                         size="sm"
                         onClick={() => escalation.id && handleStatusUpdate(escalation.id, 'acknowledged')}
@@ -226,7 +229,7 @@ export function Escalations() {
                       </Button>
                     )}
 
-                    {escalation.status === 'acknowledged' && (
+                    {canManageEscalations && escalation.status === 'acknowledged' && (
                       <Button
                         size="sm"
                         variant="secondary"

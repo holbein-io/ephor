@@ -5,12 +5,19 @@ import io.holbein.ephor.api.model.enums.EscalationStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import org.springframework.stereotype.Repository;
+
 import java.util.List;
 
+@Repository
 public interface EscalationRepository extends JpaRepository<Escalation, Long> {
 
     long countByStatusIn(List<EscalationStatus> statuses);
 
     @Query("SELECT COUNT(DISTINCT e.vulnerability.id) FROM Escalation e")
     long countDistinctVulnerabilities();
+
+    List<Escalation> findByEscalatedByOrderByEscalatedAtDesc(String escalatedBy);
+
+    List<Escalation> findByCreatedByOrderByUpdatedAtDesc(String createdBy);
 }

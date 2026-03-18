@@ -4,48 +4,59 @@ import {
   RemediationComment,
   RemediationWithDetails,
   RemediationStatus,
-  RemediationPriority
+  RemediationPriority,
+  CompletionMethod
 } from '../../types';
 
-/**
- * Service for remediation-related API operations
- */
 export const remediationService = {
-  /**
-   * Get all remediations for a vulnerability (history view)
-   */
   async getByVulnerability(vulnerabilityId: number): Promise<RemediationWithDetails[]> {
-    return apiClient.get(`/remediations/vulnerability/${vulnerabilityId}`);
+    const remediations: RemediationWithDetails[] = await apiClient.get(`/remediations/vulnerability/${vulnerabilityId}`);
+    const withComments = await Promise.all(
+      remediations.map(async (r) => {
+        try {
+          const comments: RemediationComment[] = await apiClient.get(`/remediations/${r.id}/comments`);
+          return { ...r, comments };
+        } catch {
+          return { ...r, comments: [] as RemediationComment[] };
+        }
+      })
+    );
+    return withComments;
   },
 
-  /**
-   * Get a single remediation by ID
-   */
   async getById(id: number): Promise<Remediation & { comments: RemediationComment[] }> {
     return apiClient.get(`/remediations/${id}`);
   },
 
-  /**
-   * Update a remediation
-   */
   async update(
     id: number,
     updates: {
-      status?: RemediationStatus;
       assigned_to?: string | null;
       target_date?: string | null;
       priority?: RemediationPriority;
       notes?: string | null;
-      completion_method?: 'auto_resolved' | 'manual' | 'version_upgrade';
-      completed_by?: string | null;
     }
   ): Promise<Remediation> {
     return apiClient.patch(`/remediations/${id}`, updates);
   },
 
-  /**
-   * Add a comment to a remediation
-   */
+  async changeStatus(
+    id: number,
+    request: {
+      status: RemediationStatus;
+      completionMethod?: CompletionMethod;
+      completedBy?: string;
+      notes?: string;
+    }
+  ): Promise<Remediation> {
+    return apiClient.patch(`/remediations/${id}/status`, {
+      status: request.status,
+      completion_method: request.completionMethod,
+      completed_by: request.completedBy,
+      notes: request.notes
+    });
+  },
+
   async addComment(
     remediationId: number,
     author: string,
@@ -54,16 +65,10 @@ export const remediationService = {
     return apiClient.post(`/remediations/${remediationId}/comments`, { author, comment });
   },
 
-  /**
-   * Get comments for a remediation
-   */
   async getComments(remediationId: number): Promise<RemediationComment[]> {
     return apiClient.get(`/remediations/${remediationId}/comments`);
   },
 
-  /**
-   * Get remediation statistics
-   */
   async getStatistics(): Promise<{
     total: number;
     planned: number;
@@ -77,9 +82,6 @@ export const remediationService = {
     return apiClient.get('/remediations/statistics');
   },
 
-  /**
-   * Get overdue remediations
-   */
   async getOverdue(): Promise<Remediation[]> {
     return apiClient.get('/remediations/overdue');
   }

@@ -2,10 +2,13 @@ import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { SeverityHeatmap } from '../components/SeverityHeatmap';
+import { ActivityFeed } from '../components/ActivityFeed';
 import { dashboardService } from '../services/api';
+import { useUser } from '../contexts/UserContext';
 import { CHART_COLORS, SEVERITY_CHART_COLORS, chartTooltipStyle } from '../constants/chart-theme';
 
 export function Dashboard() {
+  const { hasPermission } = useUser();
   const { data: metrics, isLoading: metricsLoading } = useQuery({
     queryKey: ['dashboard-metrics'],
     queryFn: () => dashboardService.getMetrics(),
@@ -161,6 +164,18 @@ export function Dashboard() {
           <SeverityHeatmap maxNamespaces={8} />
         </CardContent>
       </Card>
+
+      {/* Row 4: Recent Activity (admin only) */}
+      {hasPermission('VIEW_ADMIN') && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="font-display">Recent Activity</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ActivityFeed limit={20} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

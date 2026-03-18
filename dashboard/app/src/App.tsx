@@ -7,7 +7,9 @@ import { Vulnerabilities } from './pages/Vulnerabilities';
 import { VulnerabilityDetail } from './pages/VulnerabilityDetail';
 import { Escalations } from './pages/Escalations';
 import { Triage } from './pages/Triage';
+import { MyItems } from './pages/MyItems';
 import { UserProvider } from './contexts/UserContext';
+import { UserDirectoryProvider } from './contexts/UserDirectoryContext';
 import { VulnerabilityListProvider } from './contexts/VulnerabilityListContext';
 
 const queryClient = new QueryClient({
@@ -24,6 +26,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ReactQueryDevtools initialIsOpen={false} />
       <UserProvider>
+        <UserDirectoryProvider>
         <VulnerabilityListProvider>
           <Router>
             <Layout>
@@ -33,10 +36,12 @@ function App() {
                 <Route path="/vulnerabilities/:id" element={<VulnerabilityDetail />} />
                 <Route path="/escalations" element={<Escalations />} />
                 <Route path="/triage" element={<Triage />} />
+                <Route path="/my-items" element={<MyItems />} />
               </Routes>
             </Layout>
           </Router>
         </VulnerabilityListProvider>
+        </UserDirectoryProvider>
       </UserProvider>
     </QueryClientProvider>
   );

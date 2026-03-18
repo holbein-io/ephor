@@ -33,6 +33,32 @@ api:
       initialDelaySeconds: 0
       periodSeconds: 5
       failureThreshold: 3
+  auth:
+    # IdP logout URL for proper session termination (optional)
+    # Example for Keycloak: https://keycloak.example.com/realms/ephor/protocol/openid-connect/logout
+    idpLogoutUrl: ""
+
+  userDirectory:
+    # Provider: none | internal | keycloak | github
+    provider: internal
+
+    # Keycloak provider settings (when provider=keycloak)
+    keycloak:
+      serverUrl: ""
+      realm: ephor
+      clientId: ephor-admin
+      clientSecret: ""
+      existingSecret: ""      # Secret with key 'keycloak-client-secret'
+      syncInterval: "900000"   # 15 minutes in ms
+
+    # GitHub provider settings (when provider=github)
+    github:
+      org: ""
+      token: ""
+      existingSecret: ""      # Secret with key 'github-token'
+      syncInterval: "1800000"  # 30 minutes in ms
+      # teamMapping is configured via extraEnv (Spring relaxed binding)
+
   extraEnv: []
   extraEnvFrom: []
 

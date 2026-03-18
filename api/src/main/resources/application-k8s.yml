@@ -1,0 +1,18 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://192.168.1.68:30432/ephor
+    username: ephor
+    password: Cubbyhole9-Antidote1-Neutron2-Uneven8-Unbuckled1
+  jpa:
+    show-sql: true
+
+# Enable dev user for local development without oauth2-proxy
+auth:
+  dev:
+    enabled: true
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true

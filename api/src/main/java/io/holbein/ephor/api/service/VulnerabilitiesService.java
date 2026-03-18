@@ -119,25 +119,24 @@ public class VulnerabilitiesService {
 
     @Transactional
     public int updateVulnerabilityStatus(long id, InstanceStatus status, boolean applyToAll) {
-        int updatedCount;
-        // The applyToAll guard only protects resolved/terminal
-        if (applyToAll || status == InstanceStatus.open) {
-            if (RESOLVED_STATUSES.contains(status)) {
-                updatedCount = vulnerabilityInstanceRepository.updateStatusWithResolvedAt(id, status);
+        // applyToAll: update ALL instances regardless of current status
+        // !applyToAll with mixed status: only update open instances
+        // !applyToAll with uniform status: update all instances (allows resolved -> accepted_risk etc.)
+        if (RESOLVED_STATUSES.contains(status)) {
+            if (applyToAll) {
+                return vulnerabilityInstanceRepository.updateStatusWithResolvedAt(id, status);
             } else {
-                updatedCount = vulnerabilityInstanceRepository.updateStatusByVulnerabilityId(id, status);
+                // Try open instances first, if none, apply to all
+                int updated = vulnerabilityInstanceRepository.updateStatusWithResolvedAtByCurrentStatus(
+                        id, InstanceStatus.open, status);
+                if (updated == 0) {
+                    updated = vulnerabilityInstanceRepository.updateStatusWithResolvedAt(id, status);
+                }
+                return updated;
             }
         } else {
-            // Only update instances that are currently open
-            if (RESOLVED_STATUSES.contains(status)) {
-                updatedCount = vulnerabilityInstanceRepository.updateStatusWithResolvedAtByCurrentStatus(
-                        id, InstanceStatus.open, status);
-            } else {
-                updatedCount = vulnerabilityInstanceRepository.updateStatusByVulnerabilityIdAndCurrentStatus(
-                        id, InstanceStatus.open, status);
-            }
+            return vulnerabilityInstanceRepository.updateStatusByVulnerabilityId(id, status);
         }
-        return updatedCount;
     }
 
     public List<Comment> getCommentsByVulnerabilityId(long vulnerabilityId) {
@@ -155,8 +154,8 @@ public class VulnerabilitiesService {
 
         Comment comment = Comment.builder()
                 .vulnerability(vulnerability)
-                .author(author)
-                .comment(request.getComment())
+                .createdBy(author)
+                .body(request.getComment())
                 .commentType(request.getCommentType())
                 .build();
 

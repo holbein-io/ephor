@@ -48,6 +48,11 @@ springdoc:
     enabled: false
     tags-sorter: alpha
 
+# User directory provider (none | internal | keycloak | github)
+ephor:
+  user-directory:
+    provider: ${EPHOR_USER_DIRECTORY_PROVIDER:internal}
+
 # Authentication configuration (oauth2-proxy)
 auth:
   enabled: true
@@ -59,5 +64,5 @@ auth:
     enabled: false
     username: dev-user
     email: dev@localhost
-    groups: developers,security-team
+    groups: ephor-admins,developers,security-team
     display-name: Development User

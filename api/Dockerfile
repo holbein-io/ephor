@@ -5,6 +5,7 @@ WORKDIR /workspace
 COPY gradlew gradlew
 COPY gradle gradle
 COPY build.gradle build.gradle
+COPY gradle.properties gradle.properties
 COPY settings.gradle settings.gradle
 COPY api/build.gradle api/build.gradle
 

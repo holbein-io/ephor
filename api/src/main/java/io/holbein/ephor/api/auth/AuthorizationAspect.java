@@ -8,9 +8,13 @@ import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
 
+import io.holbein.ephor.api.model.enums.Permission;
+import io.holbein.ephor.api.model.enums.Role;
+
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Aspect that enforces @RequireAuth annotations on controller methods.
@@ -51,6 +55,19 @@ public class AuthorizationAspect {
                 throw new ForbiddenException(
                         "Access denied. Required groups: " + groupList +
                                 ", user groups: " + user.groups()
+                );
+            }
+        }
+
+        // Check permission-based authorization if permissions are specified
+        Permission[] requiredPermissions = annotation.permissions();
+        if (requiredPermissions.length > 0) {
+            Set<Permission> userPermissions = Role.resolvePermissions(user.groups());
+            boolean hasPermission = Arrays.stream(requiredPermissions)
+                    .anyMatch(userPermissions::contains);
+            if (!hasPermission) {
+                throw new ForbiddenException(
+                        "Insufficient permissions. Required: " + Arrays.toString(requiredPermissions)
                 );
             }
         }

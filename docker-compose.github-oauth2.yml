@@ -1,0 +1,62 @@
+## GitHub OAuth2 development stack
+## Usage: docker compose -f docker-compose.yml -f docker-compose.github-oauth2.yml up --build
+##
+## Prerequisites:
+##   1. Create a GitHub OAuth App: https://github.com/organizations/<your-org>/settings/applications/new
+##      - Homepage URL: http://localhost:4180
+##      - Callback URL: http://localhost:4180/oauth2/callback
+##   2. Create GitHub teams in your org: ephor-viewers, ephor-analysts, ephor-leads, ephor-admins
+##   3. Set environment variables before running:
+##      export GITHUB_OAUTH_CLIENT_ID=<your-client-id>
+##      export GITHUB_OAUTH_CLIENT_SECRET=<your-client-secret>
+##      export GITHUB_ORG=<your-org>
+##      export GITHUB_TOKEN=<personal-access-token-with-read:org>  # for user sync
+##
+## Access: http://localhost:4180 (redirects to GitHub login)
+
+services:
+
+  ## Override: disable dev-user bypass, enable GitHub user directory sync
+  api:
+    environment:
+      AUTH_DEV_ENABLED: "false"
+      AUTH_ENABLED: "true"
+      EPHOR_USER_DIRECTORY_PROVIDER: "github"
+      EPHOR_USER_DIRECTORY_GITHUB_ORG: "${GITHUB_ORG}"
+      EPHOR_USER_DIRECTORY_GITHUB_TOKEN: "${GITHUB_TOKEN}"
+      ## Team mapping: GitHub team slug -> ephor group name
+      ## Configure via Spring relaxed binding for map properties:
+      EPHOR_USER_DIRECTORY_GITHUB_TEAM_MAPPING_EPHOR_VIEWERS: "ephor-viewers"
+      EPHOR_USER_DIRECTORY_GITHUB_TEAM_MAPPING_EPHOR_ANALYSTS: "ephor-analysts"
+      EPHOR_USER_DIRECTORY_GITHUB_TEAM_MAPPING_EPHOR_LEADS: "ephor-leads"
+      EPHOR_USER_DIRECTORY_GITHUB_TEAM_MAPPING_EPHOR_ADMINS: "ephor-admins"
+
+  ## Override: dashboard accessed through oauth2-proxy, not directly
+  dashboard:
+    ports: !override []
+
+  ## ---------- OAuth2 Proxy (GitHub provider) ----------
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: ephor-oauth2-proxy
+    command:
+      - --http-address=0.0.0.0:4180
+      - --upstream=http://dashboard:8080
+      - --provider=github
+      - --github-org=${GITHUB_ORG}
+      - --github-team=ephor-viewers,ephor-analysts,ephor-leads,ephor-admins
+      - --client-id=${GITHUB_OAUTH_CLIENT_ID}
+      - --client-secret=${GITHUB_OAUTH_CLIENT_SECRET}
+      - --cookie-secret=OQINaROshtE9TcZkNAm_Sg==
+      - --cookie-secure=false
+      - --email-domain=*
+      - --scope=user:email read:org
+      - --redirect-url=http://localhost:4180/oauth2/callback
+      - --pass-user-headers=true
+      - --set-xauthrequest=true
+      - --pass-access-token=true
+      - --skip-provider-button=true
+    ports:
+      - "4180:4180"
+    depends_on:
+      - dashboard

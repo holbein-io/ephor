@@ -1,5 +1,7 @@
 package io.holbein.ephor.api.auth;
 
+import io.holbein.ephor.api.model.enums.Permission;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -30,4 +32,10 @@ public @interface RequireAuth {
      * If false (default), user must belong to at least ONE group.
      */
     boolean requireAllGroups() default false;
+
+    /**
+     * Required permissions. User must have at least one of these permissions.
+     * Empty array means no permission check is performed.
+     */
+    Permission[] permissions() default {};
 }

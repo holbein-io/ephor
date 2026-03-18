@@ -7,6 +7,7 @@ import { TriagePreparation } from '../../types';
 import { SEVERITY_COLORS } from '../../constants/colors';
 import { useTriageDecisions } from '../../hooks/useTriageData';
 import { AffectedWorkloads } from './AffectedWorkloads';
+import { UserAssignmentInput } from '../UserAssignmentInput';
 
 interface TriageDecisionMakerProps {
   preparations: TriagePreparation[] | undefined;
@@ -34,6 +35,7 @@ export function TriageDecisionMaker({
   const [decisionNotes, setDecisionNotes] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [targetDate, setTargetDate] = useState('');
+  const [targetDateError, setTargetDateError] = useState('');
   const [priority, setPriority] = useState<string>('medium');
   const [decidedVulns, setDecidedVulns] = useState<Set<number>>(new Set());
   const [applyToAll, setApplyToAll] = useState(true);
@@ -76,6 +78,15 @@ export function TriageDecisionMaker({
 
   const handleDecision = (status: 'accepted_risk' | 'false_positive' | 'needs_remediation' | 'duplicate') => {
     if (!currentPrep) return;
+
+    if (status === 'needs_remediation' && targetDate) {
+      const today = new Date().toISOString().split('T')[0];
+      if (targetDate < today) {
+        setTargetDateError('Target date cannot be in the past');
+        return;
+      }
+    }
+    setTargetDateError('');
 
     onMakeDecision(currentPrep.vulnerability_id, {
       status,
@@ -315,12 +326,10 @@ export function TriageDecisionMaker({
                       <User className="w-3 h-3 inline mr-1" />
                       Assign To
                     </label>
-                    <input
-                      type="text"
+                    <UserAssignmentInput
                       value={assignedTo}
-                      onChange={(e) => setAssignedTo(e.target.value)}
-                      className="w-full px-2 py-1 border border-border rounded text-sm"
-                      placeholder="Username"
+                      onChange={setAssignedTo}
+                      placeholder="Search users..."
                     />
                   </div>
                   <div>
@@ -331,9 +340,16 @@ export function TriageDecisionMaker({
                     <input
                       type="date"
                       value={targetDate}
-                      onChange={(e) => setTargetDate(e.target.value)}
-                      className="w-full px-2 py-1 border border-border rounded text-sm"
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        setTargetDate(e.target.value);
+                        setTargetDateError('');
+                      }}
+                      className={`w-full px-2 py-1 border rounded text-sm ${targetDateError ? 'border-danger' : 'border-border'}`}
                     />
+                    {targetDateError && (
+                      <p className="text-xs text-danger mt-1">{targetDateError}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-text-secondary mb-1">Priority</label>

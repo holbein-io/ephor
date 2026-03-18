@@ -42,6 +42,28 @@ spec:
                 secretKeyRef:
                   name: {{ include "ephor.database.secretName" . }}
                   key: password
+            {{- if and (eq .Values.api.userDirectory.provider "keycloak") .Values.api.userDirectory.keycloak.clientSecret }}
+            - name: EPHOR_USER_DIRECTORY_KEYCLOAK_CLIENT_SECRET
+              {{- if .Values.api.userDirectory.keycloak.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.api.userDirectory.keycloak.existingSecret }}
+                  key: keycloak-client-secret
+              {{- else }}
+              value: {{ .Values.api.userDirectory.keycloak.clientSecret | quote }}
+              {{- end }}
+            {{- end }}
+            {{- if and (eq .Values.api.userDirectory.provider "github") .Values.api.userDirectory.github.token }}
+            - name: EPHOR_USER_DIRECTORY_GITHUB_TOKEN
+              {{- if .Values.api.userDirectory.github.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.api.userDirectory.github.existingSecret }}
+                  key: github-token
+              {{- else }}
+              value: {{ .Values.api.userDirectory.github.token | quote }}
+              {{- end }}
+            {{- end }}
             {{- with .Values.api.extraEnv }}
             {{- toYaml . | nindent 12 }}
             {{- end }}

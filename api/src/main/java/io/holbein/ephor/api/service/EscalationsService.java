@@ -7,6 +7,8 @@ import io.holbein.ephor.api.entity.Escalation;
 import io.holbein.ephor.api.entity.Vulnerability;
 import io.holbein.ephor.api.exception.ResourceNotFoundException;
 import io.holbein.ephor.api.mapper.escalation.EscalationMapper;
+import io.holbein.ephor.api.model.enums.AuditAction;
+import io.holbein.ephor.api.model.enums.EntityType;
 import io.holbein.ephor.api.repositories.EscalationRepository;
 import io.holbein.ephor.api.repositories.VulnerabilityRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -23,6 +26,7 @@ public class EscalationsService {
 
     private final EscalationRepository escalationRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public List<EscalationResponse> getAllEscalations() {
@@ -42,6 +46,12 @@ public class EscalationsService {
         Escalation escalation = EscalationMapper.toEntity(request, vulnerability);
         Escalation saved = escalationRepository.save(escalation);
         log.info("Created escalation {} for vulnerability {}", saved.getId(), request.vulnerabilityId());
+
+        auditService.log(AuditAction.ESCALATION_CREATED, EntityType.ESCALATION, saved.getId(),
+                Map.of("vulnerabilityId", request.vulnerabilityId(),
+                        "priority", saved.getPriority(),
+                        "escalationLevel", saved.getEscalationLevel()));
+
         return EscalationMapper.toResponse(saved);
     }
 
@@ -65,6 +75,10 @@ public class EscalationsService {
 
         Escalation updated = escalationRepository.save(escalation);
         log.info("Updated escalation {}", id);
+
+        auditService.log(AuditAction.ESCALATION_STATUS_CHANGED, EntityType.ESCALATION, id,
+                Map.of("escalationId", id));
+
         return EscalationMapper.toResponse(updated);
     }
 }
