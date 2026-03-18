@@ -20,6 +20,8 @@ import io.holbein.ephor.api.mapper.triage.DecisionMapper;
 import io.holbein.ephor.api.mapper.triage.PreparationMapper;
 import io.holbein.ephor.api.mapper.triage.SessionMapper;
 import io.holbein.ephor.api.model.enums.*;
+import io.holbein.ephor.api.model.enums.AuditAction;
+import io.holbein.ephor.api.model.enums.EntityType;
 import io.holbein.ephor.api.repositories.*;
 import io.holbein.ephor.api.service.triage.BulkPlanFilterMatcher;
 import jakarta.persistence.EntityManager;
@@ -50,6 +52,7 @@ public class TriageService {
     private final TriageBulkOperationRepository triageBulkOperationRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
     private final VulnerabilityInstanceRepository vulnerabilityInstanceRepository;
+    private final AuditService auditService;
 
     @Transactional(readOnly = true)
     public List<SessionResponse> getTriageSessions(SessionStatus status) {
@@ -136,6 +139,17 @@ public class TriageService {
 
         session.setStatus(targetStatus);
         triageSessionRepository.save(session);
+
+        AuditAction auditAction = switch (targetStatus) {
+            case ACTIVE -> AuditAction.TRIAGE_SESSION_STARTED;
+            case COMPLETED, CANCELLED -> AuditAction.TRIAGE_SESSION_COMPLETED;
+            default -> null;
+        };
+        if (auditAction != null) {
+            auditService.log(auditAction, EntityType.TRIAGE_SESSION, id,
+                    Map.of("status", targetStatus.name()));
+        }
+
         return SessionMapper.toResponse(session);
     }
 
@@ -225,6 +239,7 @@ public class TriageService {
 
         String whereClause = "WHERE " + String.join(" AND ", conditions);
 
+        // TODO: remove the query...put into a proper repository
         String sql = String.format("""
                 SELECT
                     v.id, v.cve_id, v.package_name, v.package_version, v.severity,
@@ -366,6 +381,11 @@ public class TriageService {
                 request.vulnerabilityId(),
                 VulnerabilityInstance.InstanceStatus.open,
                 VulnerabilityInstance.InstanceStatus.triaged);
+
+        auditService.log(AuditAction.TRIAGE_DECISION_MADE, EntityType.VULNERABILITY, request.vulnerabilityId(),
+                Map.of("sessionId", request.sessionId(),
+                        "decision", request.status().name(),
+                        "cveId", vulnerability.getCveId()));
 
         return DecisionMapper.toResponse(decision);
     }
@@ -509,6 +529,12 @@ public class TriageService {
                 .executedBy(request.executedBy())
                 .build();
         triageBulkOperationRepository.save(operation);
+
+        auditService.log(AuditAction.TRIAGE_SESSION_COMPLETED, EntityType.TRIAGE_SESSION, session.getId(),
+                Map.of("bulkPlanId", bulkPlan.getId(),
+                        "action", bulkPlan.getAction().name(),
+                        "affectedCount", createdDecisions.size(),
+                        "skippedCount", skippedCount));
 
         return new ExecuteBulkPlanResponse(
                 bulkPlan.getId(),

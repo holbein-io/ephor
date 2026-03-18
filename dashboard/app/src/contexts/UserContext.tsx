@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { authService, User } from '../services/api/auth.service';
+import { authService, User, Permission, AuthConfig } from '../services/api/auth.service';
 
 interface UserContextType {
   user: User | null;
@@ -7,6 +7,8 @@ interface UserContextType {
   isLoading: boolean;
   displayName: string;
   logout: () => void;
+  hasPermission: (permission: Permission) => boolean;
+  hasAnyPermission: (...permissions: Permission[]) => boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -18,14 +20,19 @@ interface UserProviderProps {
 export function UserProvider({ children }: UserProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [authConfig, setAuthConfig] = useState<AuthConfig | null>(null);
 
   useEffect(() => {
-    async function fetchUser() {
+    async function init() {
       try {
-        const response = await authService.getCurrentUser();
-        if (response.authenticated && response.user) {
-          setUser(response.user);
+        const [userResponse, config] = await Promise.all([
+          authService.getCurrentUser(),
+          authService.getAuthConfig(),
+        ]);
+        if (userResponse.authenticated && userResponse.user) {
+          setUser(userResponse.user);
         }
+        setAuthConfig(config);
       } catch (error) {
         console.error('Failed to fetch user:', error);
       } finally {
@@ -33,18 +40,26 @@ export function UserProvider({ children }: UserProviderProps) {
       }
     }
 
-    fetchUser();
+    init();
   }, []);
 
-  const logout = async () => {
-    try {
-      const config = await authService.getAuthConfig();
-      // Use the logout URL from config - API will construct the proper URL
-      // including any redirects needed for the IdP
-      window.location.href = config.logoutUrl || '/oauth2/sign_out';
-    } catch {
-      window.location.href = '/oauth2/sign_out';
+  const logout = () => {
+    const appUrl = `${window.location.protocol}//${window.location.host}`;
+
+    if (authConfig?.idpLogoutUrl) {
+      const idpLogout = `${authConfig.idpLogoutUrl}?post_logout_redirect_uri=${encodeURIComponent(appUrl)}&client_id=ephor-app`;
+      window.location.href = `/oauth2/sign_out?rd=${encodeURIComponent(idpLogout)}`;
+    } else {
+      window.location.href = authConfig?.logoutUrl || '/oauth2/sign_out';
     }
+  };
+
+  const hasPermission = (permission: Permission): boolean => {
+    return user?.permissions?.includes(permission) ?? false;
+  };
+
+  const hasAnyPermission = (...permissions: Permission[]): boolean => {
+    return permissions.some(p => user?.permissions?.includes(p) ?? false);
   };
 
   const value: UserContextType = {
@@ -53,6 +68,8 @@ export function UserProvider({ children }: UserProviderProps) {
     isLoading,
     displayName: user?.displayName || user?.username || '',
     logout,
+    hasPermission,
+    hasAnyPermission,
   };
 
   return (

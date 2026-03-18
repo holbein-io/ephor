@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../utils';
 import { useUser } from '../contexts/UserContext';
+import { useUserDirectory } from '../contexts/UserDirectoryContext';
 import { useNavBadges } from '../hooks/useNavBadges';
 import { useSidebarState } from '../hooks/useSidebarState';
 
@@ -36,8 +37,14 @@ const navigation: NavItem[] = [
 export function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const { user, isAuthenticated, isLoading, logout } = useUser();
+  const { capabilities } = useUserDirectory();
   const badges = useNavBadges();
   const { isCollapsed, toggle } = useSidebarState();
+
+  const dynamicNav: NavItem[] = capabilities?.my_items_enabled
+    ? [{ name: 'My Items', href: '/my-items', icon: User }]
+    : [];
+  const allNavigation = [...navigation, ...dynamicNav];
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -65,7 +72,7 @@ export function Layout({ children }: LayoutProps) {
         {/* Navigation */}
         <nav className="mt-6 px-2">
           <ul className="space-y-1">
-            {navigation.map((item) => {
+            {allNavigation.map((item) => {
               const isActive = location.pathname === item.href ||
                 (item.href !== '/' && location.pathname.startsWith(item.href));
 

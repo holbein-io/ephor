@@ -3,10 +3,15 @@ package io.holbein.ephor.api.entity;
 import io.holbein.ephor.api.model.enums.EscalationStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.Instant;
 
 @Entity
+@EntityListeners(AuditingEntityListener.class)
 @Table(name = "escalations", indexes = {
         @Index(name = "idx_escalations_status", columnList = "status"),
         @Index(name = "idx_escalations_priority", columnList = "priority"),
@@ -54,6 +59,18 @@ public class Escalation {
 
     @Column(name = "due_date")
     private Instant dueDate;
+
+    @CreatedBy
+    @Column(name = "created_by", updatable = false)
+    private String createdBy;
+
+    @LastModifiedBy
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private Instant updatedAt;
 
     @PrePersist
     protected void onCreate() {

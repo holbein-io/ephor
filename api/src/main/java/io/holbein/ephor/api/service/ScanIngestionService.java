@@ -15,8 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -28,6 +30,7 @@ public class ScanIngestionService {
     private final ContainerRepository containerRepository;
     private final VulnerabilityRepository vulnerabilityRepository;
     private final VulnerabilityInstanceRepository vulnerabilityInstanceRepository;
+    private final RemediationService remediationService;
 
     @Transactional
     public ScanIngestResponse ingestScan(ScanIngestRequest request) {
@@ -55,6 +58,7 @@ public class ScanIngestionService {
         int criticalVulns = 0;
         int totalAutoResolved = 0;
         int totalReopened = 0;
+        Set<Long> allAutoResolvedVulnIds = new HashSet<>();
 
         for (WorkloadData workloadData : request.getWorkloads()) {
             WorkloadProcessingResult result = processWorkload(scan, workloadData);
@@ -62,7 +66,11 @@ public class ScanIngestionService {
             criticalVulns += result.criticalCount;
             totalAutoResolved += result.autoResolvedCount;
             totalReopened += result.reopenedCount;
+            allAutoResolvedVulnIds.addAll(result.autoResolvedVulnIds);
         }
+
+        // Auto-complete any active remediations for auto-resolved vulnerabilities
+        remediationService.autoCompleteRemediationsForVulnerabilities(allAutoResolvedVulnIds);
 
         log.info("Scan ingestion complete. Scan ID: {}, Workloads: {}, Vulnerabilities: {}, Critical: {}, Auto-resolved: {}, Reopened: {}",
                 scan.getId(), request.getWorkloads().size(), totalVulnerabilities, criticalVulns, totalAutoResolved, totalReopened);
@@ -103,6 +111,7 @@ public class ScanIngestionService {
         int criticalCount = 0;
         int autoResolvedCount = 0;
         int reopenedCount = 0;
+        Set<Long> autoResolvedVulnIds = new HashSet<>();
 
         // Process each container
         for (ContainerData containerData : workloadData.getContainers()) {
@@ -111,9 +120,10 @@ public class ScanIngestionService {
             criticalCount += result.criticalCount;
             autoResolvedCount += result.autoResolvedCount;
             reopenedCount += result.reopenedCount;
+            autoResolvedVulnIds.addAll(result.autoResolvedVulnIds);
         }
 
-        return new WorkloadProcessingResult(vulnerabilityCount, criticalCount, autoResolvedCount, reopenedCount);
+        return new WorkloadProcessingResult(vulnerabilityCount, criticalCount, autoResolvedCount, reopenedCount, autoResolvedVulnIds);
     }
 
     private ContainerProcessingResult processContainer(Scan scan, Workload workload, ContainerData containerData) {
@@ -168,6 +178,13 @@ public class ScanIngestionService {
             }
         }
 
+        List<Long> autoResolvedVulnIds;
+        if (currentVulnerabilityIds.isEmpty()) {
+            autoResolvedVulnIds = vulnerabilityInstanceRepository.findAllOpenVulnerabilityIdsForContainer(container.getId());
+        } else {
+            autoResolvedVulnIds = vulnerabilityInstanceRepository.findVulnerabilityIdsToAutoResolve(container.getId(), currentVulnerabilityIds);
+        }
+
         // Auto-resolve vulnerabilities no longer in the scan for this container
         int autoResolvedCount = autoResolveVulnerabilities(container.getId(), scan.getId(), currentVulnerabilityIds);
 
@@ -176,7 +193,7 @@ public class ScanIngestionService {
                     autoResolvedCount, container.getName(), workload.getNamespace(), workload.getName());
         }
 
-        return new ContainerProcessingResult(vulnerabilityCount, criticalCount, autoResolvedCount, reopenedCount);
+        return new ContainerProcessingResult(vulnerabilityCount, criticalCount, autoResolvedCount, reopenedCount, new HashSet<>(autoResolvedVulnIds));
     }
 
     private VulnerabilityProcessingResult processVulnerability(Scan scan, Container container, VulnerabilityData vulnData) {
@@ -268,11 +285,11 @@ public class ScanIngestionService {
     }
 
     private record WorkloadProcessingResult(int vulnerabilityCount, int criticalCount, int autoResolvedCount,
-                                            int reopenedCount) {
+                                            int reopenedCount, Set<Long> autoResolvedVulnIds) {
     }
 
     private record ContainerProcessingResult(int vulnerabilityCount, int criticalCount, int autoResolvedCount,
-                                             int reopenedCount) {
+                                             int reopenedCount, Set<Long> autoResolvedVulnIds) {
     }
 
     private record VulnerabilityProcessingResult(Long vulnerabilityId, boolean reopened) {

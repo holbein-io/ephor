@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 
 public interface RemediationRepository extends JpaRepository<Remediation, Long> {
@@ -41,4 +42,11 @@ public interface RemediationRepository extends JpaRepository<Remediation, Long> 
                    "FROM remediations WHERE status = 'completed'",
            nativeQuery = true)
     Double avgCompletionDays();
+
+    @Query("SELECT r FROM Remediation r WHERE r.vulnerability.id IN :vulnerabilityIds AND r.status IN :statuses")
+    List<Remediation> findActiveByVulnerabilityIds(
+            @Param("vulnerabilityIds") Collection<Long> vulnerabilityIds,
+            @Param("statuses") List<RemediationStatus> statuses);
+
+    List<Remediation> findByAssignedToOrderByTargetDateAsc(String assignedTo);
 }

@@ -11,4 +11,11 @@
                  stripComments="false"/>
     </changeSet>
 
+    <changeSet id="002-user-session-rbac" author="ephor">
+        <sqlFile path="002_user_session_rbac.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+                 stripComments="false"/>
+    </changeSet>
+
 </databaseChangeLog>

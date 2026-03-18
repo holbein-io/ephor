@@ -9,3 +9,17 @@ data:
   SPRING_DATASOURCE_USERNAME: {{ include "ephor.database.username" . | quote }}
   LOGGING_STRUCTURED_FORMAT_CONSOLE: logstash
   AUTH_ENABLED: "true"
+  {{- if .Values.api.auth.idpLogoutUrl }}
+  AUTH_IDP_LOGOUT_URL: {{ .Values.api.auth.idpLogoutUrl | quote }}
+  {{- end }}
+  EPHOR_USER_DIRECTORY_PROVIDER: {{ .Values.api.userDirectory.provider | quote }}
+  {{- if eq .Values.api.userDirectory.provider "keycloak" }}
+  EPHOR_USER_DIRECTORY_KEYCLOAK_SERVER_URL: {{ .Values.api.userDirectory.keycloak.serverUrl | quote }}
+  EPHOR_USER_DIRECTORY_KEYCLOAK_REALM: {{ .Values.api.userDirectory.keycloak.realm | quote }}
+  EPHOR_USER_DIRECTORY_KEYCLOAK_CLIENT_ID: {{ .Values.api.userDirectory.keycloak.clientId | quote }}
+  EPHOR_USER_DIRECTORY_KEYCLOAK_SYNC_INTERVAL: {{ .Values.api.userDirectory.keycloak.syncInterval | quote }}
+  {{- end }}
+  {{- if eq .Values.api.userDirectory.provider "github" }}
+  EPHOR_USER_DIRECTORY_GITHUB_ORG: {{ .Values.api.userDirectory.github.org | quote }}
+  EPHOR_USER_DIRECTORY_GITHUB_SYNC_INTERVAL: {{ .Values.api.userDirectory.github.syncInterval | quote }}
+  {{- end }}

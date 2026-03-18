@@ -1,0 +1,115 @@
+## OAuth2 development stack with Keycloak + oauth2-proxy
+## Usage: docker compose -f docker-compose.yml -f docker-compose.oauth2.yml up --build
+##
+## Access: http://localhost:4180
+## Login with:
+##   admin@example.com / password    -> ephor-admins group (full access)
+##   analyst@example.com / password  -> ephor-analysts group (manage vulns/triage)
+##   lead@example.com / password     -> ephor-leads group (analyst + view admin)
+##   viewer@example.com / password   -> ephor-viewers group (read-only)
+##
+## Keycloak admin console: http://localhost:8180/admin (admin / admin)
+##
+## --- MANUAL SETUP REQUIRED (one-time after first `docker compose up`) ---
+##
+## 1. Assign service account roles for Keycloak user sync:
+##    Keycloak Admin -> ephor realm -> Clients -> ephor-admin -> Service account roles
+##    Assign these realm-management roles:
+##      - view-users
+##      - manage-users
+##      - query-users
+##      - query-groups
+##      - query-realms
+##
+## 2. Add a protocol mapper so the service account token includes admin roles:
+##    Keycloak Admin -> ephor realm -> Clients -> ephor-admin -> Client scopes tab
+##    Click "ephor-admin-dedicated" -> Configure a new mapper -> User Client Role
+##    Settings:
+##      - Name: client-roles
+##      - Client ID: realm-management
+##      - Token Claim Name: resource_access.realm-management.roles
+##      - Add to ID token: ON
+##      - Add to access token: ON
+##
+## After completing both steps, restart the API:
+##   docker compose -f docker-compose.yml -f docker-compose.oauth2.yml restart api
+
+services:
+
+  ## Override: disable dev-user bypass
+  api:
+    depends_on:
+      keycloak:
+        condition: service_started
+    environment:
+      AUTH_DEV_ENABLED: "false"
+      AUTH_ENABLED: "true"
+      AUTH_IDP_LOGOUT_URL: "http://localhost:8180/realms/ephor/protocol/openid-connect/logout"
+      EPHOR_USER_DIRECTORY_PROVIDER: "keycloak"
+      EPHOR_USER_DIRECTORY_KEYCLOAK_SERVER_URL: "http://keycloak:8180"
+      EPHOR_USER_DIRECTORY_KEYCLOAK_REALM: "ephor"
+      EPHOR_USER_DIRECTORY_KEYCLOAK_CLIENT_ID: "ephor-admin"
+      EPHOR_USER_DIRECTORY_KEYCLOAK_CLIENT_SECRET: "ephor-admin-secret"
+
+  ## Override: dashboard accessed through oauth2-proxy, not directly
+  dashboard:
+    ports: !override []
+
+  ## ---------- Keycloak (OIDC Identity Provider) ----------
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: ephor-keycloak
+    command: start-dev --import-realm
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_PORT: 8180
+      KC_HOSTNAME: localhost
+      KC_HOSTNAME_PORT: 8180
+      KC_HOSTNAME_STRICT: false
+    volumes:
+      - ./docker/keycloak/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+    ports:
+      - "8180:8180"
+
+  ## ---------- OAuth2 Proxy ----------
+  oauth2-proxy:
+    image: quay.io/oauth2-proxy/oauth2-proxy:v7.6.0
+    container_name: ephor-oauth2-proxy
+    command:
+      - --http-address=0.0.0.0:4180
+      - --upstream=http://dashboard:8080
+      - --provider=keycloak-oidc
+      - --oidc-issuer-url=http://localhost:8180/realms/ephor
+      - --skip-oidc-discovery=true
+      - --client-id=ephor-app
+      - --client-secret=ephor-app-secret
+      - --cookie-secret=OQINaROshtE9TcZkNAm_Sg==
+      - --cookie-secure=false
+      - --email-domain=*
+      - --redirect-url=http://localhost:4180/oauth2/callback
+      - --pass-user-headers=true
+      - --set-xauthrequest=true
+      - --pass-access-token=true
+      - --skip-provider-button=true
+      - --code-challenge-method=S256
+      - --allowed-group=ephor-admins
+      - --allowed-group=ephor-analysts
+      - --allowed-group=ephor-viewers
+      - --allowed-group=ephor-leads
+      - --oidc-groups-claim=groups
+      - --user-id-claim=preferred_username
+      - --oidc-email-claim=email
+      - --whitelist-domain=localhost:8180
+      - --whitelist-domain=localhost:4180
+      - --scope=openid email profile groups
+      - --insecure-oidc-skip-issuer-verification=true
+      - --login-url=http://localhost:8180/realms/ephor/protocol/openid-connect/auth
+      - --redeem-url=http://keycloak:8180/realms/ephor/protocol/openid-connect/token
+      - --oidc-jwks-url=http://keycloak:8180/realms/ephor/protocol/openid-connect/certs
+      - --profile-url=http://keycloak:8180/realms/ephor/protocol/openid-connect/userinfo
+    ports:
+      - "4180:4180"
+    depends_on:
+      - keycloak
+      - dashboard

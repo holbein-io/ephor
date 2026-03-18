@@ -2,6 +2,7 @@ package io.holbein.ephor.api.filter;
 
 import io.holbein.ephor.api.auth.UserContext;
 import io.holbein.ephor.api.auth.UserContextHolder;
+import io.holbein.ephor.api.service.UserRegistryService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -40,6 +41,12 @@ public class OAuth2ProxyAuthFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(OAuth2ProxyAuthFilter.class);
 
+    private final UserRegistryService userRegistryService;
+
+    public OAuth2ProxyAuthFilter(UserRegistryService userRegistryService) {
+        this.userRegistryService = userRegistryService;
+    }
+
     // OAuth2-proxy header names
     public static final String HEADER_USER = "X-Forwarded-User";
     public static final String HEADER_EMAIL = "X-Forwarded-Email";
@@ -69,6 +76,15 @@ public class OAuth2ProxyAuthFilter extends OncePerRequestFilter {
                 }
             }
 
+            // Register/update user in lazy registry (non-blocking)
+            if (userContext != null) {
+                try {
+                    userRegistryService.registerOrUpdate(userContext);
+                } catch (Exception e) {
+                    log.debug("User registry update failed (non-blocking)", e);
+                }
+            }
+
             filterChain.doFilter(request, response);
         } finally {
             UserContextHolder.clearContext();
@@ -77,21 +93,24 @@ public class OAuth2ProxyAuthFilter extends OncePerRequestFilter {
     }
 
     private UserContext extractUserContext(HttpServletRequest request) {
-        String username = getHeader(request, HEADER_USER);
+        String rawUser = getHeader(request, HEADER_USER);
 
         // No user header means not authenticated via oauth2-proxy
-        if (username == null) {
+        if (rawUser == null) {
             return null;
         }
 
         String email = getHeader(request, HEADER_EMAIL);
         String groupsHeader = getHeader(request, HEADER_GROUPS);
-        String displayName = getHeader(request, HEADER_PREFERRED_USERNAME);
+        String preferredUsername = getHeader(request, HEADER_PREFERRED_USERNAME);
         String accessToken = getHeader(request, HEADER_ACCESS_TOKEN);
+
+        // Prefer preferred_username over X-Forwarded-User (which may be a UUID from Keycloak)
+        String username = preferredUsername != null ? preferredUsername : rawUser;
 
         List<String> groups = parseGroups(groupsHeader);
 
-        return new UserContext(username, email, groups, displayName, accessToken);
+        return new UserContext(username, email, groups, preferredUsername, accessToken);
     }
 
     private String getHeader(HttpServletRequest request, String headerName) {
@@ -109,6 +128,8 @@ public class OAuth2ProxyAuthFilter extends OncePerRequestFilter {
         return Arrays.stream(groupsHeader.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
+                // Strip org prefix for GitHub OAuth2 (e.g. "holbein-io:ephor-analysts" -> "ephor-analysts")
+                .map(g -> g.contains(":") ? g.substring(g.indexOf(":") + 1) : g)
                 .toList();
     }
 }

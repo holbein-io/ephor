@@ -6,6 +6,7 @@ import io.holbein.ephor.api.entity.RemediationComment;
 import io.holbein.ephor.api.entity.Vulnerability;
 import io.holbein.ephor.api.mapper.remediation.RemediationCommentMapper;
 import io.holbein.ephor.api.mapper.remediation.RemediationMapper;
+import io.holbein.ephor.api.model.enums.CompletionMethod;
 import io.holbein.ephor.api.model.enums.RemediationPriority;
 import io.holbein.ephor.api.model.enums.RemediationStatus;
 import io.holbein.ephor.api.repositories.RemediationCommentRepository;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -38,12 +40,14 @@ public class RemediationService {
     private static final Set<String> VALID_TRANSITIONS_FROM_IN_PROGRESS =
             Set.of("completed", "abandoned");
 
+    @Transactional(readOnly = true)
     public List<RemediationResponse> getRemediationsByVulnerability(Long vulnerabilityId) {
         return remediationRepository.findAllByVulnerabilityId(vulnerabilityId).stream()
                 .map(RemediationMapper::toResponse)
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public RemediationDetailResponse getRemediation(Long id) {
         return remediationRepository.findById(id)
                 .map(RemediationMapper::toDetailResponse)
@@ -125,6 +129,7 @@ public class RemediationService {
         return RemediationMapper.toResponse(remediation);
     }
 
+    @Transactional(readOnly = true)
     public List<RemediationCommentResponse> getComments(Long remediationId) {
         return remediationCommentRepository.findByRemediationIdOrderByCreatedAtAsc(remediationId).stream()
                 .map(RemediationCommentMapper::toResponse)
@@ -139,6 +144,7 @@ public class RemediationService {
         return RemediationCommentMapper.toResponse(comment);
     }
 
+    @Transactional(readOnly = true)
     public RemediationStatisticsResponse getStatistics() {
         long total = remediationRepository.count();
         long planned = remediationRepository.countByStatus(RemediationStatus.planned);
@@ -166,6 +172,7 @@ public class RemediationService {
         );
     }
 
+    @Transactional(readOnly = true)
     public List<RemediationResponse> getOverdueRemediations(RemediationPriority priority, String assignedTo) {
         return remediationRepository.findOverdueFiltered(
                         ACTIVE_STATUSES, LocalDate.now(), priority, assignedTo).stream()
@@ -173,6 +180,36 @@ public class RemediationService {
                 .toList();
     }
 
+    @Transactional
+    public void autoCompleteRemediationsForVulnerabilities(Collection<Long> vulnerabilityIds) {
+        if (vulnerabilityIds == null || vulnerabilityIds.isEmpty()) return;
+
+        List<Remediation> activeRemediations = remediationRepository.findActiveByVulnerabilityIds(
+                vulnerabilityIds, ACTIVE_STATUSES);
+
+        Instant now = Instant.now();
+        for (Remediation r : activeRemediations) {
+            r.setStatus(RemediationStatus.completed);
+            r.setCompletedAt(now);
+            r.setCompletionMethod(CompletionMethod.auto_resolved);
+            r.setCompletedBy("system");
+            remediationRepository.save(r);
+
+            RemediationComment comment = RemediationComment.builder()
+                    .remediation(r)
+                    .author("system")
+                    .comment("Auto-completed: vulnerability no longer detected in scan")
+                    .build();
+            remediationCommentRepository.save(comment);
+        }
+
+        if (!activeRemediations.isEmpty()) {
+            log.info("Auto-completed {} remediations for {} auto-resolved vulnerabilities",
+                    activeRemediations.size(), vulnerabilityIds.size());
+        }
+    }
+
+    @Transactional
     private void validateTransition(RemediationStatus from, RemediationStatus to) {
         String target = to.name();
         boolean valid = switch (from) {
