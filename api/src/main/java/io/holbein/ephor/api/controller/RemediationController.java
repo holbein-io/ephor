@@ -21,7 +21,7 @@ public class RemediationController {
     private final RemediationService remediationService;
 
     @GetMapping("/vulnerability/{vulnerabilityId}")
-    public List<RemediationResponse> getRemediationsByVulnerability(@PathVariable Long vulnerabilityId) {
+    public List<RemediationDetailResponse> getRemediationsByVulnerability(@PathVariable Long vulnerabilityId) {
         return remediationService.getRemediationsByVulnerability(vulnerabilityId);
     }
 

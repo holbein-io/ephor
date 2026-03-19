@@ -20,76 +20,50 @@ import {
 import { useTriageState } from '../hooks/useTriageState';
 import { useUser } from '../contexts/UserContext';
 import { TriageSession, Vulnerability } from '../types';
-import { Card, CardContent } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
-/**
- * Triage component - refactored with composition pattern
- * Splits functionality into smaller, focused components
- */
 export function Triage() {
-  // Get user context for pre-filling prep lead
   const { displayName } = useUser();
-
-  // Use the custom state management hook with user's display name as initial prepLead
   const { state, dispatch } = useTriageState({ prepLead: displayName });
   const [prepMaximized, setPrepMaximized] = useState(false);
 
-  // Data fetching hooks
   const { data: sessions, isLoading: sessionsLoading } = useTriageSessions();
-
   const { data: preparations, isLoading: preparationsLoading } = useTriagePreparations(
     state.currentSession?.id,
-    !!state.currentSession && (state.currentSession.status === 'PREPARING' || state.currentSession.status === 'ACTIVE' || state.currentSession.status === 'COMPLETED')
+    !!state.currentSession && ['PREPARING', 'ACTIVE', 'COMPLETED'].includes(state.currentSession.status)
   );
+  const { data: bulkPlans, isLoading: bulkPlansLoading } = useTriageBulkPlans(state.currentSession?.id);
+  const { data: decisions, isLoading: decisionsLoading } = useTriageDecisions(state.currentSession?.id);
 
-  const { data: bulkPlans, isLoading: bulkPlansLoading } = useTriageBulkPlans(
-    state.currentSession?.id
-  );
-
-  const { data: decisions, isLoading: decisionsLoading } = useTriageDecisions(
-    state.currentSession?.id
-  );
-
-  // Mutation hooks
   const createSessionMutation = useCreateTriageSession((session) => {
     dispatch({ type: 'SET_CURRENT_SESSION', payload: session });
   });
-
-  const updateSessionStatusMutation = useUpdateSessionStatus(
-    state.currentSession?.id,
-    (session) => {
-      dispatch({ type: 'SET_CURRENT_SESSION', payload: session });
-    }
-  );
-
+  const updateSessionStatusMutation = useUpdateSessionStatus(state.currentSession?.id, (session) => {
+    dispatch({ type: 'SET_CURRENT_SESSION', payload: session });
+  });
   const createPreparationMutation = useCreateTriagePreparation();
   const createDecisionMutation = useCreateTriageDecision();
   const createBulkPlanMutation = useCreateTriageBulkPlan();
   const executeBulkPlanMutation = useExecuteBulkPlan();
 
-  // Callbacks
   const handleSelectSession = useCallback((session: TriageSession) => {
     dispatch({ type: 'SET_CURRENT_SESSION', payload: session });
   }, [dispatch]);
 
   const handleCreateSession = useCallback(() => {
-    const sessionData = {
+    createSessionMutation.mutate({
       session_date: new Date().toISOString(),
       status: 'PREPARING',
       prep_lead: state.prepLead || 'System',
       prep_notes: state.prepNotes || '',
       attendees: state.attendees.filter(a => a).length > 0 ? state.attendees.filter(a => a) : [],
       notes: state.sessionNotes || ''
-    };
-    createSessionMutation.mutate(sessionData);
+    });
   }, [state, createSessionMutation]);
 
   const handleAddToSession = useCallback((vulnerability: Vulnerability, priority?: string, notes?: string) => {
     if (!state.currentSession) return;
-
-    const prepData = {
+    createPreparationMutation.mutate({
       session_id: state.currentSession.id,
       vulnerability_id: vulnerability.id!,
       prep_status: 'pending',
@@ -97,14 +71,11 @@ export function Triage() {
       preliminary_decision: undefined,
       priority_flag: priority,
       prep_by: state.prepLead || 'System'
-    };
-
-    createPreparationMutation.mutate(prepData);
+    });
   }, [state.currentSession, state.prepLead, createPreparationMutation]);
 
   const handleCreateBulkPlan = useCallback((plan: any) => {
     if (!state.currentSession) return;
-
     createBulkPlanMutation.mutate({
       session_id: state.currentSession.id,
       created_by: state.prepLead || 'System',
@@ -114,16 +85,11 @@ export function Triage() {
 
   const handleExecuteBulkPlan = useCallback((planId: number) => {
     if (!state.currentSession) return;
-
-    executeBulkPlanMutation.mutate({
-      sessionId: state.currentSession.id,
-      planId
-    });
+    executeBulkPlanMutation.mutate({ sessionId: state.currentSession.id, planId });
   }, [state.currentSession, executeBulkPlanMutation]);
 
   const handleStartSession = useCallback(() => {
     if (!state.currentSession) return;
-
     updateSessionStatusMutation.mutate({
       sessionId: state.currentSession.id,
       status: 'ACTIVE',
@@ -133,7 +99,6 @@ export function Triage() {
 
   const handleCompleteSession = useCallback(() => {
     if (!state.currentSession) return;
-
     updateSessionStatusMutation.mutate({
       sessionId: state.currentSession.id,
       status: 'COMPLETED',
@@ -143,7 +108,6 @@ export function Triage() {
 
   const handleMakeDecision = useCallback((vulnerabilityId: number, decision: any) => {
     if (!state.currentSession) return;
-
     createDecisionMutation.mutate({
       session_id: state.currentSession.id,
       vulnerability_id: vulnerabilityId,
@@ -156,160 +120,139 @@ export function Triage() {
     });
   }, [state.currentSession, state.prepLead, createDecisionMutation]);
 
+  const prepCount = preparations?.length || 0;
+  const decCount = decisions?.length || 0;
+  const remaining = Math.max(0, prepCount - decCount);
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-display font-bold text-text-primary">Triage</h1>
-        <div className="flex gap-2">
-          {state.currentSession && state.currentSession.status === 'PREPARING' && (
-            <Button onClick={handleStartSession} className="bg-success hover:bg-success/80">
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              Start Session
-            </Button>
-          )}
-          {state.currentSession && state.currentSession.status === 'ACTIVE' && (
-            <Button onClick={handleCompleteSession}>
-              <CheckCircle2 className="w-4 h-4 mr-2" />
-              Complete Session
-            </Button>
-          )}
-        </div>
-      </div>
+    <div className="-mx-6 -mt-7 flex" style={{ height: 'calc(100vh - 56px)' }}>
+      {/* Session Panel (sidebar) */}
+      {!prepMaximized && (
+        <TriageSessionManager
+          sessions={sessions as any}
+          currentSession={state.currentSession}
+          isLoading={sessionsLoading}
+          onSelectSession={handleSelectSession}
+          onCreateSession={handleCreateSession}
+        />
+      )}
 
-      {/* Workflow Stepper */}
-      {state.currentSession && (
-        <Card>
-          <CardContent className="pt-6">
-            <TriageWorkflowStepper
-              currentStatus={state.currentSession.status}
-              preparationsCount={preparations?.length || 0}
-              decisionsCount={state.currentSession.decisions_count || 0}
-            />
-
-            {/* Quick Stats Row */}
-            <div className="grid grid-cols-3 gap-4 pt-4 border-t mt-4">
-              <div className="text-center">
-                <div className="text-xl font-bold text-text-primary">
-                  {preparations?.length || 0}
-                </div>
-                <div className="text-xs text-text-tertiary">Prepared</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-text-primary">
-                  {decisions?.length || 0}
-                </div>
-                <div className="text-xs text-text-tertiary">Decisions</div>
-              </div>
-              <div className="text-center">
-                <div className="text-xl font-bold text-text-primary">
-                  {bulkPlans?.filter(p => p.status === 'executed').length || 0}/{bulkPlans?.length || 0}
-                </div>
-                <div className="text-xs text-text-tertiary">Bulk Plans</div>
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto px-7 py-6 flex flex-col gap-4">
+        {state.currentSession ? (
+          <>
+            {/* Action buttons */}
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-xl italic text-text-primary">
+                Triage Session
+              </h2>
+              <div className="flex gap-2">
+                {state.currentSession.status === 'PREPARING' && (
+                  <button
+                    onClick={handleStartSession}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-mint text-bg-primary text-sm font-semibold hover:bg-accent-mint/80 transition-colors"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Start Session
+                  </button>
+                )}
+                {state.currentSession.status === 'ACTIVE' && (
+                  <button
+                    onClick={handleCompleteSession}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-white text-sm font-semibold hover:bg-accent-hover transition-colors"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Complete Session
+                  </button>
+                )}
               </div>
             </div>
 
-            {state.currentSession.session_duration_minutes && (
-              <div className="mt-3 pt-3 border-t">
-                <div className="flex items-center justify-center gap-2 text-sm text-text-secondary">
-                  <Clock className="w-4 h-4" />
-                  <span>Duration: {state.currentSession.session_duration_minutes} minutes</span>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      <div className={prepMaximized ? '' : 'grid grid-cols-1 lg:grid-cols-3 gap-6'}>
-        {/* Sessions List */}
-        {!prepMaximized && (
-          <div className="lg:col-span-1">
-            <TriageSessionManager
-              sessions={sessions as any}
-              currentSession={state.currentSession}
-              isLoading={sessionsLoading}
-              onSelectSession={handleSelectSession}
-              onCreateSession={handleCreateSession}
+            {/* Stepper */}
+            <TriageWorkflowStepper
+              currentStatus={state.currentSession.status}
+              preparationsCount={prepCount}
+              decisionsCount={state.currentSession.decisions_count || 0}
             />
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-4 gap-2.5 animate-fade-up delay-2">
+              {[
+                { label: 'Prepared', value: prepCount, color: 'text-text-primary' },
+                { label: 'Decided', value: decCount, color: 'text-accent-mint' },
+                { label: 'Remaining', value: remaining, color: 'text-accent' },
+                { label: 'Duration', value: state.currentSession.session_duration_minutes ? `${state.currentSession.session_duration_minutes}m` : '-', color: 'text-accent-cool' },
+              ].map(stat => (
+                <div key={stat.label} className="bg-bg-secondary border border-border rounded-2xl px-[18px] py-3.5">
+                  <div className="font-mono text-[11px] tracking-[0.06em] uppercase text-text-tertiary mb-1">{stat.label}</div>
+                  <div className={`text-[22px] font-semibold leading-none ${stat.color}`}>{stat.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Phase Content */}
+            {state.currentSession.status === 'PREPARING' && (
+              <TriagePreparation
+                preparations={preparations as any}
+                sessionId={state.currentSession.id}
+                onAddToSession={handleAddToSession}
+                maximized={prepMaximized}
+                onToggleMaximize={() => setPrepMaximized(prev => !prev)}
+              />
+            )}
+
+            {state.currentSession.status !== 'COMPLETED' && (
+              <TriageBulkOperations
+                bulkPlans={bulkPlans}
+                isLoading={bulkPlansLoading}
+                sessionId={state.currentSession.id}
+                onCreatePlan={handleCreateBulkPlan}
+                onExecutePlan={handleExecuteBulkPlan}
+              />
+            )}
+
+            {state.currentSession.status === 'ACTIVE' && (
+              <TriageDecisionMaker
+                preparations={preparations as any}
+                isLoading={preparationsLoading}
+                sessionId={state.currentSession.id}
+                onMakeDecision={handleMakeDecision}
+              />
+            )}
+
+            {state.currentSession.status === 'COMPLETED' && (
+              <TriageSessionReview
+                decisions={decisions as any}
+                preparations={preparations as any}
+                isLoadingDecisions={decisionsLoading}
+                isLoadingPreparations={preparationsLoading}
+              />
+            )}
+          </>
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center">
+            <div className="bg-accent/10 rounded-full p-4 mb-4">
+              <AlertCircle className="w-10 h-10 text-accent" />
+            </div>
+            <h3 className="text-lg font-semibold text-text-primary mb-2">No session selected</h3>
+            <p className="text-sm text-text-tertiary text-center max-w-md mb-6">
+              Select an existing triage session from the panel on the left, or create a new session to start reviewing vulnerabilities.
+            </p>
+            <div className="flex items-center gap-4 text-sm text-text-tertiary">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-warning" /> Preparing
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-accent" /> Active
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-success" /> Completed
+              </span>
+            </div>
           </div>
         )}
 
-        {/* Main Content Area */}
-        <div className={prepMaximized ? '' : 'lg:col-span-2 space-y-6'}>
-          {state.currentSession ? (
-            <>
-              {/* Preparation Phase */}
-              {state.currentSession.status === 'PREPARING' && (
-                <TriagePreparation
-                  preparations={preparations as any}
-                  sessionId={state.currentSession.id}
-                  onAddToSession={handleAddToSession}
-                  maximized={prepMaximized}
-                  onToggleMaximize={() => setPrepMaximized(prev => !prev)}
-                />
-              )}
-
-              {/* Bulk Operations - Only show for active sessions */}
-              {state.currentSession.status !== 'COMPLETED' && (
-                <TriageBulkOperations
-                  bulkPlans={bulkPlans}
-                  isLoading={bulkPlansLoading}
-                  sessionId={state.currentSession.id}
-                  onCreatePlan={handleCreateBulkPlan}
-                  onExecutePlan={handleExecuteBulkPlan}
-                />
-              )}
-
-              {/* Active Session - Decision Making */}
-              {state.currentSession.status === 'ACTIVE' && (
-                <TriageDecisionMaker
-                  preparations={preparations as any}
-                  isLoading={preparationsLoading}
-                  sessionId={state.currentSession.id}
-                  onMakeDecision={handleMakeDecision}
-                />
-              )}
-
-              {/* Completed Session - Review */}
-              {state.currentSession.status === 'COMPLETED' && (
-                <TriageSessionReview
-                  decisions={decisions as any}
-                  preparations={preparations as any}
-                  isLoadingDecisions={decisionsLoading}
-                  isLoadingPreparations={preparationsLoading}
-                />
-              )}
-            </>
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <div className="bg-accent/10 rounded-full p-4 mb-4">
-                  <AlertCircle className="w-10 h-10 text-accent" />
-                </div>
-                <h3 className="text-lg font-semibold text-text-primary mb-2">No session selected</h3>
-                <p className="text-sm text-text-tertiary text-center max-w-md mb-6">
-                  Select an existing triage session from the list on the left, or create a new session to start reviewing and triaging vulnerabilities.
-                </p>
-                <div className="flex items-center gap-4 text-sm text-text-tertiary">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-warning" />
-                    Preparing
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-accent" />
-                    Active
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-success" />
-                    Completed
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
+      </main>
     </div>
   );
 }

@@ -1,181 +1,93 @@
 import { useQuery } from '@tanstack/react-query';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { ThreatStrip } from '../components/dashboard/ThreatStrip';
+import { SeverityMegaStrip } from '../components/dashboard/SeverityMegaStrip';
+import { BentoCard } from '../components/dashboard/BentoCard';
+import { StatusOverview } from '../components/dashboard/StatusOverview';
 import { SeverityHeatmap } from '../components/SeverityHeatmap';
 import { ActivityFeed } from '../components/ActivityFeed';
 import { dashboardService } from '../services/api';
 import { useUser } from '../contexts/UserContext';
-import { CHART_COLORS, SEVERITY_CHART_COLORS, chartTooltipStyle } from '../constants/chart-theme';
 
 export function Dashboard() {
   const { hasPermission } = useUser();
-  const { data: metrics, isLoading: metricsLoading } = useQuery({
+  const { data: metrics, isLoading } = useQuery({
     queryKey: ['dashboard-metrics'],
     queryFn: () => dashboardService.getMetrics(),
     refetchInterval: 30000
   });
 
-  const { data: trends, isLoading: trendsLoading } = useQuery({
-    queryKey: ['vulnerability-trends'],
-    queryFn: () => dashboardService.getTrends(30),
-    refetchInterval: 60000
-  });
-
-  if (metricsLoading) {
+  if (isLoading || !metrics) {
     return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {[...Array(2)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-40 bg-bg-tertiary rounded"></div>
-              </CardContent>
-            </Card>
-          ))}
+      <div className="space-y-4 animate-pulse">
+        <div className="h-[120px] bg-bg-secondary rounded-2xl" />
+        <div className="h-16 bg-bg-secondary rounded-2xl" />
+        <div className="grid grid-cols-12 gap-4">
+          <div className="col-span-3 h-64 bg-bg-secondary rounded-2xl" />
+          <div className="col-span-5 h-64 bg-bg-secondary rounded-2xl" />
+          <div className="col-span-4 h-64 bg-bg-secondary rounded-2xl" />
         </div>
       </div>
     );
   }
 
-  const severityData = metrics ? [
-    { name: 'Critical', value: metrics.by_severity.CRITICAL, color: SEVERITY_CHART_COLORS.CRITICAL },
-    { name: 'High', value: metrics.by_severity.HIGH, color: SEVERITY_CHART_COLORS.HIGH },
-    { name: 'Medium', value: metrics.by_severity.MEDIUM, color: SEVERITY_CHART_COLORS.MEDIUM },
-    { name: 'Low', value: metrics.by_severity.LOW, color: SEVERITY_CHART_COLORS.LOW },
-    { name: 'Unknown', value: metrics.by_severity.UNKNOWN, color: SEVERITY_CHART_COLORS.UNKNOWN }
-  ].filter(item => item.value > 0) : [];
+  const statusItems = [
+    { label: 'Open', value: metrics.by_status.open, color: 'var(--color-severity-critical)' },
+    { label: 'In Progress', value: metrics.active_escalations, color: 'var(--color-accent-cool)' },
+    { label: 'Resolved', value: metrics.by_status.resolved, color: 'var(--color-accent-mint)' },
+    { label: 'Accepted', value: metrics.by_status.accepted_risk, color: 'var(--color-text-tertiary)' },
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Row 1: Status Breakdown + Severity Distribution */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display">Status Breakdown</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-danger rounded-full"></div>
-                  <span className="text-sm font-medium text-text-secondary">Open</span>
-                </div>
-                <span className="text-lg font-bold text-danger">{metrics?.by_status.open || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-success rounded-full"></div>
-                  <span className="text-sm font-medium text-text-secondary">Resolved</span>
-                </div>
-                <span className="text-lg font-bold text-success">{metrics?.by_status.resolved || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-warning rounded-full"></div>
-                  <span className="text-sm font-medium text-text-secondary">Accepted Risk</span>
-                </div>
-                <span className="text-lg font-bold text-warning">{metrics?.by_status.accepted_risk || 0}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="w-3 h-3 bg-severity-unknown rounded-full"></div>
-                  <span className="text-sm font-medium text-text-secondary">False Positives</span>
-                </div>
-                <span className="text-lg font-bold text-text-secondary">{metrics?.by_status.false_positive || 0}</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+    <div className="-mx-6 -mt-7">
+      <ThreatStrip metrics={metrics} />
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display">Severity Distribution</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {severityData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250}>
-                <PieChart>
-                  <Pie
-                    data={severityData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {severityData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip {...chartTooltipStyle} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-64 flex items-center justify-center text-text-tertiary">
-                No vulnerability data available
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+      <div className="px-8 py-7 max-w-[1440px] mx-auto space-y-4">
+        <div className="grid grid-cols-12 gap-4">
+          <SeverityMegaStrip
+            severity={metrics.by_severity}
+            total={metrics.total_vulnerabilities}
+          />
 
-      {/* Row 2: Vulnerability Trends (full width) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-display">Vulnerability Trends (30 days)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {trendsLoading ? (
-            <div className="h-64 animate-pulse bg-bg-tertiary rounded"></div>
+          <BentoCard title="Status Overview" span={3}>
+            <StatusOverview statuses={statusItems} />
+          </BentoCard>
+
+          <BentoCard
+            title="Namespace Heatmap"
+            action={{ label: 'Expand →', href: '/vulnerabilities' }}
+            span={5}
+          >
+            <SeverityHeatmap maxNamespaces={5} />
+          </BentoCard>
+
+          {hasPermission('VIEW_ADMIN') ? (
+            <BentoCard
+              title="Recent Activity"
+              action={{ label: 'All →', href: '#' }}
+              span={4}
+            >
+              <ActivityFeed limit={8} />
+            </BentoCard>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={trends}>
-                <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(value) => new Date(value).toLocaleDateString()}
-                  tick={{ fill: CHART_COLORS.text }}
-                  axisLine={{ stroke: CHART_COLORS.axisLine }}
-                />
-                <YAxis
-                  tick={{ fill: CHART_COLORS.text }}
-                  axisLine={{ stroke: CHART_COLORS.axisLine }}
-                />
-                <Tooltip
-                  {...chartTooltipStyle}
-                  labelFormatter={(value) => new Date(value as string).toLocaleDateString()}
-                />
-                <Bar dataKey="critical" stackId="a" fill={SEVERITY_CHART_COLORS.CRITICAL} />
-                <Bar dataKey="high" stackId="a" fill={SEVERITY_CHART_COLORS.HIGH} />
-                <Bar dataKey="medium" stackId="a" fill={SEVERITY_CHART_COLORS.MEDIUM} />
-                <Bar dataKey="low" stackId="a" fill={SEVERITY_CHART_COLORS.LOW} />
-              </BarChart>
-            </ResponsiveContainer>
+            <BentoCard title="Summary" span={4}>
+              <div className="flex flex-col gap-3 text-sm text-text-secondary">
+                <div className="flex justify-between">
+                  <span>Total vulnerabilities</span>
+                  <span className="font-mono font-medium text-text-primary">
+                    {metrics.total_vulnerabilities.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>False positives</span>
+                  <span className="font-mono font-medium text-text-primary">
+                    {metrics.by_status.false_positive}
+                  </span>
+                </div>
+              </div>
+            </BentoCard>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Row 3: Severity Heatmap by Namespace (full width) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="font-display">Severity Heatmap by Namespace</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <SeverityHeatmap maxNamespaces={8} />
-        </CardContent>
-      </Card>
-
-      {/* Row 4: Recent Activity (admin only) */}
-      {hasPermission('VIEW_ADMIN') && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="font-display">Recent Activity</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ActivityFeed limit={20} />
-          </CardContent>
-        </Card>
-      )}
+        </div>
+      </div>
     </div>
   );
 }

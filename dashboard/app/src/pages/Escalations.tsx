@@ -58,8 +58,8 @@ export function Escalations() {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-display font-bold text-text-primary">Escalations</h1>
-          <p className="text-text-secondary">Manage vulnerability escalations requiring attention</p>
+          <h1 className="font-display text-2xl italic text-text-primary tracking-tight">Escalations</h1>
+          <p className="text-[13px] text-text-secondary mt-1">Manage vulnerability escalations requiring attention</p>
         </div>
       </div>
 

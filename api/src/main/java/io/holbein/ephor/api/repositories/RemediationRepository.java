@@ -15,6 +15,9 @@ public interface RemediationRepository extends JpaRepository<Remediation, Long> 
 
     List<Remediation> findAllByVulnerabilityId(Long vulnerabilityId);
 
+    @Query("SELECT DISTINCT r FROM Remediation r LEFT JOIN FETCH r.comments WHERE r.vulnerability.id = :vulnerabilityId")
+    List<Remediation> findAllByVulnerabilityIdWithComments(@Param("vulnerabilityId") Long vulnerabilityId);
+
     @Query("SELECT r FROM Remediation r " +
            "WHERE r.status IN :statuses AND r.targetDate < :date " +
            "ORDER BY r.targetDate ASC")

@@ -1,29 +1,27 @@
-// Centralized color constants for the Holbein dark theme
-
 export const SEVERITY_COLORS = {
   CRITICAL: {
-    hex: '#EF4444',
+    hex: '#E8613A',
     tailwind: 'text-severity-critical bg-severity-critical/15 border-severity-critical/30',
     textOnly: 'text-severity-critical',
     bgOnly: 'bg-severity-critical/15',
     borderOnly: 'border-severity-critical/30'
   },
   HIGH: {
-    hex: '#F59E0B',
+    hex: '#E8A33A',
     tailwind: 'text-severity-high bg-severity-high/15 border-severity-high/30',
     textOnly: 'text-severity-high',
     bgOnly: 'bg-severity-high/15',
     borderOnly: 'border-severity-high/30'
   },
   MEDIUM: {
-    hex: '#EAB308',
+    hex: '#C9B84A',
     tailwind: 'text-severity-medium bg-severity-medium/15 border-severity-medium/30',
     textOnly: 'text-severity-medium',
     bgOnly: 'bg-severity-medium/15',
     borderOnly: 'border-severity-medium/30'
   },
   LOW: {
-    hex: '#3B82F6',
+    hex: '#5B8DEF',
     tailwind: 'text-severity-low bg-severity-low/15 border-severity-low/30',
     textOnly: 'text-severity-low',
     bgOnly: 'bg-severity-low/15',
@@ -125,7 +123,7 @@ export const TRIAGE_SESSION_STATUS_COLORS = {
 
 export const REMEDIATION_STATUS_COLORS = {
   planned: {
-    tailwind: 'text-severity-low bg-severity-low/15',
+    tailwind: 'text-accent-cool bg-accent-cool/15',
     label: 'Planned'
   },
   in_progress: {

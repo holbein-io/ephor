@@ -10,18 +10,7 @@ import {
 
 export const remediationService = {
   async getByVulnerability(vulnerabilityId: number): Promise<RemediationWithDetails[]> {
-    const remediations: RemediationWithDetails[] = await apiClient.get(`/remediations/vulnerability/${vulnerabilityId}`);
-    const withComments = await Promise.all(
-      remediations.map(async (r) => {
-        try {
-          const comments: RemediationComment[] = await apiClient.get(`/remediations/${r.id}/comments`);
-          return { ...r, comments };
-        } catch {
-          return { ...r, comments: [] as RemediationComment[] };
-        }
-      })
-    );
-    return withComments;
+    return apiClient.get(`/remediations/vulnerability/${vulnerabilityId}`);
   },
 
   async getById(id: number): Promise<Remediation & { comments: RemediationComment[] }> {

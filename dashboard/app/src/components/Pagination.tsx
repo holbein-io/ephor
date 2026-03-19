@@ -1,14 +1,15 @@
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Button } from './ui/button';
+import { cn } from '../utils';
 
 interface PaginationProps {
   currentPage: number;
   totalPages: number;
+  totalItems?: number;
+  pageSize?: number;
   onPageChange: (page: number) => void;
   disabled?: boolean;
 }
 
-export function Pagination({ currentPage, totalPages, onPageChange, disabled }: PaginationProps) {
+export function Pagination({ currentPage, totalPages, totalItems, pageSize, onPageChange, disabled }: PaginationProps) {
   if (totalPages <= 1) return null;
 
   const getVisiblePages = () => {
@@ -39,78 +40,36 @@ export function Pagination({ currentPage, totalPages, onPageChange, disabled }: 
 
   const visiblePages = getVisiblePages();
 
+  const rangeStart = totalItems && pageSize ? (currentPage - 1) * pageSize + 1 : null;
+  const rangeEnd = totalItems && pageSize ? Math.min(currentPage * pageSize, totalItems) : null;
+
   return (
-    <div className="flex items-center justify-between border-t border-border bg-bg-card px-4 py-3 sm:px-6">
-      <div className="flex flex-1 justify-between sm:hidden">
-        <Button
-          variant="outline"
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={disabled || currentPage <= 1}
-        >
-          Previous
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={disabled || currentPage >= totalPages}
-        >
-          Next
-        </Button>
-      </div>
+    <div className="flex items-center justify-between px-5 py-3.5 border-t border-border-subtle bg-bg-tertiary rounded-b-2xl">
+      <span className="text-[12.5px] text-text-tertiary font-mono">
+        {rangeStart && rangeEnd && totalItems
+          ? `${rangeStart}-${rangeEnd} of ${totalItems.toLocaleString()}`
+          : `Page ${currentPage} of ${totalPages}`
+        }
+      </span>
 
-      <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-        <div>
-          <p className="text-sm text-text-secondary">
-            Page <span className="font-medium">{currentPage}</span> of{' '}
-            <span className="font-medium">{totalPages}</span>
-          </p>
-        </div>
-
-        <div>
-          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage - 1)}
-              disabled={disabled || currentPage <= 1}
-              className="rounded-r-none"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span className="sr-only">Previous</span>
-            </Button>
-
-            {visiblePages.map((page, index) => (
-              <div key={index}>
-                {page === '...' ? (
-                  <span className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-text-secondary bg-bg-card border border-border">
-                    ...
-                  </span>
-                ) : (
-                  <Button
-                    variant={page === currentPage ? 'primary' : 'outline'}
-                    size="sm"
-                    onClick={() => onPageChange(page as number)}
-                    disabled={disabled}
-                    className="rounded-none"
-                  >
-                    {page}
-                  </Button>
-                )}
-              </div>
-            ))}
-
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => onPageChange(currentPage + 1)}
-              disabled={disabled || currentPage >= totalPages}
-              className="rounded-l-none"
-            >
-              <ChevronRight className="h-4 w-4" />
-              <span className="sr-only">Next</span>
-            </Button>
-          </nav>
-        </div>
+      <div className="flex gap-1">
+        {visiblePages.map((page, index) => (
+          <button
+            key={index}
+            onClick={() => typeof page === 'number' ? onPageChange(page) : undefined}
+            disabled={disabled || page === '...'}
+            className={cn(
+              'flex items-center justify-center min-w-[30px] h-[30px] px-2 rounded-lg font-mono text-xs transition-all duration-150',
+              page === currentPage
+                ? 'bg-accent text-white border border-accent'
+                : page === '...'
+                  ? 'text-text-tertiary cursor-default'
+                  : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary cursor-pointer border border-transparent'
+            )}
+          >
+            {page}
+          </button>
+        ))}
       </div>
     </div>
   );
