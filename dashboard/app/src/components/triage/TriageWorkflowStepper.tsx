@@ -1,4 +1,4 @@
-import { Check, ClipboardList, PlayCircle, CheckCircle2 } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { cn } from '../../utils';
 
 type TriageStatus = 'PREPARING' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
@@ -10,34 +10,18 @@ interface TriageWorkflowStepperProps {
 }
 
 const steps = [
-  {
-    id: 'PREPARING',
-    name: 'Preparation',
-    icon: ClipboardList,
-  },
-  {
-    id: 'ACTIVE',
-    name: 'Active Session',
-    icon: PlayCircle,
-  },
-  {
-    id: 'COMPLETED',
-    name: 'Completed',
-    icon: CheckCircle2,
-  },
+  { id: 'PREPARING', name: 'Prepare' },
+  { id: 'ACTIVE', name: 'Decide' },
+  { id: 'COMPLETED', name: 'Review' },
 ];
 
-function getStepState(
-  stepId: string,
-  currentStatus: TriageStatus
-): 'completed' | 'current' | 'upcoming' {
-  const stepOrder = ['PREPARING', 'ACTIVE', 'COMPLETED'];
-  const currentIndex = stepOrder.indexOf(currentStatus);
-  const stepIndex = stepOrder.indexOf(stepId);
-
+function getStepState(stepId: string, currentStatus: TriageStatus): 'completed' | 'current' | 'upcoming' {
+  const order = ['PREPARING', 'ACTIVE', 'COMPLETED'];
+  const currentIdx = order.indexOf(currentStatus);
+  const stepIdx = order.indexOf(stepId);
   if (currentStatus === 'CANCELLED') return 'upcoming';
-  if (stepIndex < currentIndex) return 'completed';
-  if (stepIndex === currentIndex) return 'current';
+  if (stepIdx < currentIdx) return 'completed';
+  if (stepIdx === currentIdx) return 'current';
   return 'upcoming';
 }
 
@@ -46,98 +30,75 @@ export function TriageWorkflowStepper({
   preparationsCount = 0,
   decisionsCount = 0,
 }: TriageWorkflowStepperProps) {
+  const getSubtext = (stepId: string, state: string) => {
+    if (stepId === 'PREPARING') {
+      return state === 'completed' ? `${preparationsCount} prepared` : `${preparationsCount} added`;
+    }
+    if (stepId === 'ACTIVE') {
+      return state === 'current' ? `${decisionsCount} decided` : state === 'completed' ? `${decisionsCount} decided` : 'waiting';
+    }
+    return 'waiting';
+  };
+
   return (
-    <nav aria-label="Triage workflow progress" className="mb-6">
-      <ol className="flex items-start">
-        {steps.map((step, stepIdx) => {
-          const state = getStepState(step.id, currentStatus);
-          const Icon = step.icon;
-          const isLast = stepIdx === steps.length - 1;
+    <div className="bg-bg-secondary border border-border rounded-2xl px-7 py-5 flex items-center justify-center gap-0">
+      {steps.map((step, i) => {
+        const state = getStepState(step.id, currentStatus);
+        const isLast = i === steps.length - 1;
+        const subtext = getSubtext(step.id, state);
 
-          // Build the counter pill content
-          let counterText: string | null = null;
-          if (step.id === 'PREPARING' && preparationsCount > 0) {
-            counterText =
-              state === 'current'
-                ? `${preparationsCount} added`
-                : state === 'completed'
-                  ? `${preparationsCount} prepared`
-                  : null;
-          }
-          if (step.id === 'ACTIVE' && state === 'current') {
-            counterText = `${decisionsCount} decisions`;
-          }
-
-          return (
-            <li
-              key={step.id}
-              className={cn('flex items-start', isLast ? '' : 'flex-1')}
-            >
-              {/* Step indicator + label */}
-              <div className="flex flex-col items-center min-w-[80px]">
-                {/* Circle */}
-                <div
-                  className={cn(
-                    'relative flex h-9 w-9 items-center justify-center rounded-full transition-all duration-300',
-                    state === 'completed' &&
-                      'bg-success text-white',
-                    state === 'current' &&
-                      'bg-accent text-white shadow-[0_0_0_4px_rgba(196,151,59,0.15)]',
-                    state === 'upcoming' &&
-                      'bg-bg-tertiary text-text-tertiary border border-border'
-                  )}
-                >
-                  {state === 'completed' ? (
-                    <Check className="h-4 w-4" strokeWidth={2.5} />
-                  ) : (
-                    <Icon className="h-4 w-4" />
-                  )}
-                </div>
-
-                {/* Label */}
-                <span
-                  className={cn(
-                    'mt-2 text-xs font-semibold tracking-wide text-center leading-tight',
-                    state === 'completed' && 'text-success',
-                    state === 'current' && 'text-text-primary',
-                    state === 'upcoming' && 'text-text-tertiary'
-                  )}
-                >
-                  {step.name}
-                </span>
-
-                {/* Counter pill */}
-                {counterText && (
-                  <span
-                    className={cn(
-                      'mt-1.5 px-2 py-0.5 text-[11px] font-medium rounded-full',
-                      state === 'current'
-                        ? 'bg-accent/15 text-accent'
-                        : 'bg-success/15 text-success'
-                    )}
-                  >
-                    {counterText}
-                  </span>
+        return (
+          <div key={step.id} className="contents">
+            <div className="flex flex-col items-center gap-2 min-w-[100px]">
+              <div
+                className={cn(
+                  'w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 border-2',
+                  state === 'completed' && 'bg-accent-mint-dim border-accent-mint text-accent-mint',
+                  state === 'current' && 'bg-accent-dim border-accent text-accent animate-[pulseRing_2s_ease_infinite]',
+                  state === 'upcoming' && 'bg-bg-hover border-border text-text-tertiary'
+                )}
+              >
+                {state === 'completed' ? (
+                  <Check className="w-4 h-4" strokeWidth={2.5} />
+                ) : state === 'current' ? (
+                  <div className="w-2.5 h-2.5 rounded-full bg-accent" />
+                ) : (
+                  <span className="font-mono text-[13px]">{i + 1}</span>
                 )}
               </div>
+              <div
+                className={cn(
+                  'text-[13px] font-semibold text-center',
+                  state === 'completed' && 'text-accent-mint',
+                  state === 'current' && 'text-accent',
+                  state === 'upcoming' && 'text-text-tertiary'
+                )}
+              >
+                {step.name}
+              </div>
+              <div
+                className={cn(
+                  'text-[11px] font-mono text-center',
+                  state === 'completed' && 'text-accent-mint',
+                  state === 'current' && 'text-accent',
+                  state === 'upcoming' && 'text-text-secondary'
+                )}
+              >
+                {subtext}
+              </div>
+            </div>
 
-              {/* Connector line */}
-              {!isLast && (
-                <div className="flex-1 flex items-center pt-[18px] px-3">
-                  <div
-                    className={cn(
-                      'h-[2px] w-full rounded-full transition-colors duration-500',
-                      state === 'completed'
-                        ? 'bg-success'
-                        : 'bg-border'
-                    )}
-                  />
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-    </nav>
+            {!isLast && (
+              <div
+                className={cn(
+                  'flex-1 h-0.5 min-w-[60px] max-w-[80px] -mt-5',
+                  state === 'completed' ? 'bg-accent-mint' : 'bg-border'
+                )}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
   );
 }

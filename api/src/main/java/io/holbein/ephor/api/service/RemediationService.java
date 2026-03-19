@@ -41,9 +41,9 @@ public class RemediationService {
             Set.of("completed", "abandoned");
 
     @Transactional(readOnly = true)
-    public List<RemediationResponse> getRemediationsByVulnerability(Long vulnerabilityId) {
-        return remediationRepository.findAllByVulnerabilityId(vulnerabilityId).stream()
-                .map(RemediationMapper::toResponse)
+    public List<RemediationDetailResponse> getRemediationsByVulnerability(Long vulnerabilityId) {
+        return remediationRepository.findAllByVulnerabilityIdWithComments(vulnerabilityId).stream()
+                .map(RemediationMapper::toDetailResponse)
                 .toList();
     }
 

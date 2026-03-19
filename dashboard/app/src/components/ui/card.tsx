@@ -5,7 +5,7 @@ function Card({ className, ref, ...props }: HTMLAttributes<HTMLDivElement> & { r
   return (
     <div
       ref={ref}
-      className={cn('rounded-lg border border-border bg-bg-card shadow-sm', className)}
+      className={cn('rounded-2xl border border-border bg-bg-card', className)}
       {...props}
     />
   );
@@ -25,7 +25,7 @@ function CardTitle({ className, ref, ...props }: HTMLAttributes<HTMLDivElement> 
   return (
     <div
       ref={ref}
-      className={cn('text-lg font-display font-semibold leading-none tracking-tight text-text-primary', className)}
+      className={cn('font-mono text-[10px] font-medium tracking-[0.12em] uppercase text-text-tertiary', className)}
       {...props}
     />
   );

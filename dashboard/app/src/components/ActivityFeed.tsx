@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { auditService, AuditLogEntry } from '../services/api/audit.service';
 import { formatRelativeTime } from '../utils';
 
@@ -23,29 +23,29 @@ const ACTION_LABELS: Record<string, string> = {
   REMEDIATION_UPDATED: 'Updated remediation',
 };
 
+const ACTION_COLORS: Record<string, string> = {
+  ESCALATION_CREATED: 'var(--color-severity-critical)',
+  VULNERABILITY_STATUS_CHANGED: 'var(--color-severity-high)',
+  REMEDIATION_UPDATED: 'var(--color-accent-mint)',
+  TRIAGE_SESSION_STARTED: 'var(--color-accent-cool)',
+  TRIAGE_SESSION_COMPLETED: 'var(--color-accent-mint)',
+  TRIAGE_DECISION_MADE: 'var(--color-accent-cool)',
+  COMMENT_ADDED: 'var(--color-text-tertiary)',
+};
+
 export function ActivityFeed({ entityType, entityId, limit, className }: ActivityFeedProps) {
-  const [entries, setEntries] = useState<AuditLogEntry[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchActivity() {
-      try {
-        let data: AuditLogEntry[];
-        if (entityType && entityId) {
-          data = await auditService.getEntityActivity(entityType, entityId);
-        } else {
-          data = await auditService.getAuditLog();
-        }
-        setEntries(limit ? data.slice(0, limit) : data);
-      } catch (error) {
-        console.error('Failed to load activity feed:', error);
-      } finally {
-        setIsLoading(false);
+  const { data: entries = [], isLoading } = useQuery<AuditLogEntry[]>({
+    queryKey: ['activity-feed', entityType, entityId],
+    queryFn: async () => {
+      if (entityType && entityId) {
+        return auditService.getEntityActivity(entityType, entityId);
       }
-    }
-
-    fetchActivity();
-  }, [entityType, entityId, limit]);
+      return auditService.getAuditLog();
+    },
+    staleTime: 30000,
+    refetchInterval: 60000,
+    select: (data) => limit ? data.slice(0, limit) : data,
+  });
 
   if (isLoading) {
     return (
@@ -64,28 +64,38 @@ export function ActivityFeed({ entityType, entityId, limit, className }: Activit
   }
 
   return (
-    <div className={`space-y-2 ${className || ''}`}>
-      {entries.map((entry) => (
-        <div
-          key={entry.id}
-          className="flex items-start gap-2 text-sm border-l-2 border-border pl-3 py-1"
-        >
-          <div className="flex-1 min-w-0">
-            <span className="font-medium text-text-primary">{entry.performed_by}</span>{' '}
-            <span className="text-text-secondary">
-              {ACTION_LABELS[entry.action] || entry.action.toLowerCase().replace(/_/g, ' ')}
-            </span>
-            {!entityType && (
-              <span className="text-text-tertiary">
-                {' '}on {entry.entity_type?.toLowerCase()} #{entry.entity_id}
-              </span>
-            )}
+    <div className={`flex flex-col ${className || ''}`}>
+      {entries.map((entry, i) => {
+        const markerColor = ACTION_COLORS[entry.action] || 'var(--color-text-tertiary)';
+        return (
+          <div
+            key={entry.id}
+            className="flex gap-3.5 py-3 border-b border-border-subtle last:border-b-0 animate-fade-up"
+            style={{ animationDelay: `${i * 0.05}s` }}
+          >
+            <div
+              className="w-2 h-2 rounded-full mt-[5px] flex-shrink-0"
+              style={{ background: markerColor }}
+            />
+            <div className="flex-1 min-w-0">
+              <div className="text-[13px] text-text-primary">
+                <span className="font-semibold">{entry.performed_by}</span>{' '}
+                <span className="text-text-secondary">
+                  {ACTION_LABELS[entry.action] || entry.action.toLowerCase().replace(/_/g, ' ')}
+                </span>
+                {!entityType && entry.entity_type && (
+                  <span className="text-text-tertiary">
+                    {' '}on {entry.entity_type.toLowerCase()} #{entry.entity_id}
+                  </span>
+                )}
+              </div>
+              <div className="text-[11px] text-text-tertiary mt-0.5">
+                {formatRelativeTime(entry.created_at)}
+              </div>
+            </div>
           </div>
-          <span className="text-xs text-text-tertiary whitespace-nowrap">
-            {formatRelativeTime(entry.created_at)}
-          </span>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
