@@ -26,6 +26,7 @@ interface RemediationCompletionDialogProps {
   }) => void;
   defaultCompletedBy: string;
   isPending: boolean;
+  isAuthenticated?: boolean;
 }
 
 export function RemediationCompletionDialog({
@@ -33,7 +34,8 @@ export function RemediationCompletionDialog({
   onClose,
   onConfirm,
   defaultCompletedBy,
-  isPending
+  isPending,
+  isAuthenticated
 }: RemediationCompletionDialogProps) {
   const [completionMethod, setCompletionMethod] = useState<'manual' | 'version_upgrade'>('manual');
   const [completedBy, setCompletedBy] = useState(defaultCompletedBy);
@@ -64,6 +66,7 @@ export function RemediationCompletionDialog({
               value={completedBy}
               onChange={(e) => setCompletedBy(e.target.value)}
               placeholder="Your name"
+              disabled={isAuthenticated}
             />
           </div>
 

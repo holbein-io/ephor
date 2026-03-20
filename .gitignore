@@ -47,6 +47,10 @@ npm-debug.log*
 .env.*
 *.log
 
+### Local environment profiles ###
+**/application-k8s.yml
+**/application-local.yml
+
 ### Internal planning and architecture documents ###
 docs/tasks/
 docs/architecture/
