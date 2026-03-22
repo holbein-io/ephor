@@ -23,6 +23,7 @@ export function useUrlFilters() {
     const namespace = searchParams.get('namespace');
     const scanner_type = searchParams.get('scanner_type');
     const search = searchParams.get('search');
+    const workload = searchParams.get('workload');
     const page = searchParams.get('page');
     const limit = searchParams.get('limit');
     const sort_by = searchParams.get('sort_by');
@@ -34,6 +35,7 @@ export function useUrlFilters() {
       namespace: namespace || undefined,
       scanner_type: scanner_type || undefined,
       search: search || undefined,
+      workload: workload ? parseInt(workload, 10) : undefined,
       page: page ? parseInt(page, 10) : DEFAULT_FILTERS.page,
       limit: limit ? parseInt(limit, 10) : DEFAULT_FILTERS.limit,
       sort_by: (sort_by as VulnerabilityFilters['sort_by']) || DEFAULT_FILTERS.sort_by,
@@ -63,6 +65,9 @@ export function useUrlFilters() {
     }
     if (newFilters.search) {
       params.set('search', newFilters.search);
+    }
+    if (newFilters.workload) {
+      params.set('workload', String(newFilters.workload));
     }
     if (newFilters.page && newFilters.page !== DEFAULT_FILTERS.page) {
       params.set('page', String(newFilters.page));
@@ -103,6 +108,7 @@ export function useUrlFilters() {
       filters.severity?.length ||
       filters.namespace ||
       filters.scanner_type ||
+      filters.workload ||
       (filters.status && filters.status.join(',') !== DEFAULT_FILTERS.status?.join(','))
     );
   }, [filters]);
@@ -125,6 +131,9 @@ export function useUrlFilters() {
     }
     if (filters.scanner_type) {
       labels.push({ key: 'scanner_type', label: 'Scanner', value: filters.scanner_type });
+    }
+    if (filters.workload) {
+      labels.push({ key: 'workload', label: 'Workload', value: `ID: ${filters.workload}` });
     }
 
     return labels;

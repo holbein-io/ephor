@@ -109,6 +109,7 @@ export interface VulnerabilityFilters {
   namespace?: string;
   scanner_type?: string;
   search?: string;
+  workload?: number;
   first_detected_from?: string;
   first_detected_to?: string;
   last_seen_from?: string;
