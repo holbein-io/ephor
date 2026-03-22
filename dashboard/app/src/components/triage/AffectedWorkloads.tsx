@@ -85,6 +85,19 @@ export function AffectedWorkloads({
                     <span className="text-xs text-text-tertiary">
                       {workload.kind}
                     </span>
+                    {workload.labels && Object.keys(workload.labels).length > 0 && (
+                      <>
+                        {Object.entries(workload.labels).map(([key, value]) => (
+                          <span
+                            key={key}
+                            title={`${key}: ${value}`}
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent/10 text-accent border border-accent/20 cursor-default"
+                          >
+                            {value}
+                          </span>
+                        ))}
+                      </>
+                    )}
                   </div>
                   <div className="text-xs text-text-tertiary mt-0.5 flex items-center gap-2">
                     <span>

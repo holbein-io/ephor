@@ -2,6 +2,7 @@ package io.holbein.ephor.api.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -47,6 +48,20 @@ public class Container {
 
     @Column(name = "base_image_created")
     private Instant baseImageCreated;
+
+    @Column(name = "detected_ecosystems", columnDefinition = "jsonb")
+    @JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    private List<String> detectedEcosystems;
+
+    @Column(name = "os_family", length = 50)
+    private String osFamily;
+
+    @Column(name = "os_name", length = 50)
+    private String osName;
+
+    @Column(name = "repo_digests", columnDefinition = "jsonb")
+    @JdbcTypeCode(org.hibernate.type.SqlTypes.JSON)
+    private List<String> repoDigests;
 
     @Column(name = "created_at")
     private Instant createdAt;

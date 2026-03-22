@@ -16,6 +16,11 @@ export interface Vulnerability {
   published_date?: string;
   fixed_version?: string;
   scanner_type: string;
+  package_class?: string;
+  package_type?: string;
+  references?: string[];
+  cvss_v3_vector?: string;
+  cvss_v3_score?: number;
   first_detected: string;
   last_seen: string;
   affected_workloads?: number;
@@ -31,6 +36,7 @@ export interface Workload {
   image_names?: string;
   created_at: string;
   instance_status?: string;
+  labels?: Record<string, string>;
 }
 
 export interface Comment {
@@ -286,6 +292,7 @@ export interface AffectedWorkload {
   image_names?: string;
   instance_id: number;
   instance_status: string;
+  labels?: Record<string, string>;
 }
 
 export interface TriageSessionMetrics {

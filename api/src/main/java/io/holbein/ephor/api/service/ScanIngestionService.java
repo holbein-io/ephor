@@ -7,6 +7,7 @@ import io.holbein.ephor.api.dto.WorkloadData;
 import io.holbein.ephor.api.dto.vulnerability.VulnerabilityData;
 import io.holbein.ephor.api.entity.*;
 import io.holbein.ephor.api.model.enums.SeverityLevel;
+import java.util.Map;
 import io.holbein.ephor.api.repositories.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -107,6 +108,8 @@ public class ScanIngestionService {
 
         workload = workloadRepository.save(workload);
 
+        syncWorkloadLabels(workload, workloadData.getLabels());
+
         int vulnerabilityCount = 0;
         int criticalCount = 0;
         int autoResolvedCount = 0;
@@ -139,6 +142,10 @@ public class ScanIngestionService {
                     .imageTag(containerData.getImageTag())
                     .imageCreated(containerData.getImageCreated())
                     .baseImageCreated(containerData.getBaseImageCreated())
+                    .detectedEcosystems(containerData.getDetectedEcosystems())
+                    .osFamily(containerData.getOsFamily())
+                    .osName(containerData.getOsName())
+                    .repoDigests(containerData.getRepoDigests())
                     .build();
         } else {
             if (containerData.getImageName() != null) {
@@ -152,6 +159,18 @@ public class ScanIngestionService {
             }
             if (containerData.getBaseImageCreated() != null) {
                 container.setBaseImageCreated(containerData.getBaseImageCreated());
+            }
+            if (containerData.getDetectedEcosystems() != null) {
+                container.setDetectedEcosystems(containerData.getDetectedEcosystems());
+            }
+            if (containerData.getOsFamily() != null) {
+                container.setOsFamily(containerData.getOsFamily());
+            }
+            if (containerData.getOsName() != null) {
+                container.setOsName(containerData.getOsName());
+            }
+            if (containerData.getRepoDigests() != null) {
+                container.setRepoDigests(containerData.getRepoDigests());
             }
         }
 
@@ -219,6 +238,11 @@ public class ScanIngestionService {
                     .publishedDate(vulnData.getPublishedDate())
                     .fixedVersion(vulnData.getFixedVersion())
                     .scannerType(vulnData.getScannerType())
+                    .packageClass(vulnData.getPackageClass())
+                    .packageType(vulnData.getPackageType())
+                    .references(vulnData.getReferences())
+                    .cvssV3Vector(vulnData.getCvssV3Vector())
+                    .cvssV3Score(vulnData.getCvssV3Score())
                     .firstDetected(vulnData.getFirstDetected() != null ? vulnData.getFirstDetected() : now)
                     .lastSeen(now)
                     .build();
@@ -238,6 +262,21 @@ public class ScanIngestionService {
             }
             if (vulnData.getFixedVersion() != null) {
                 vulnerability.setFixedVersion(vulnData.getFixedVersion());
+            }
+            if (vulnData.getPackageClass() != null) {
+                vulnerability.setPackageClass(vulnData.getPackageClass());
+            }
+            if (vulnData.getPackageType() != null) {
+                vulnerability.setPackageType(vulnData.getPackageType());
+            }
+            if (vulnData.getReferences() != null) {
+                vulnerability.setReferences(vulnData.getReferences());
+            }
+            if (vulnData.getCvssV3Vector() != null) {
+                vulnerability.setCvssV3Vector(vulnData.getCvssV3Vector());
+            }
+            if (vulnData.getCvssV3Score() != null) {
+                vulnerability.setCvssV3Score(vulnData.getCvssV3Score());
             }
         }
 
@@ -293,5 +332,22 @@ public class ScanIngestionService {
     }
 
     private record VulnerabilityProcessingResult(Long vulnerabilityId, boolean reopened) {
+    }
+
+    private void syncWorkloadLabels(Workload workload, Map<String, String> labels) {
+        workload.getLabels().clear();
+        workloadRepository.flush();
+
+        if (labels != null && !labels.isEmpty()) {
+            for (Map.Entry<String, String> entry : labels.entrySet()) {
+                WorkloadLabel label = WorkloadLabel.builder()
+                        .workload(workload)
+                        .labelKey(entry.getKey())
+                        .labelValue(entry.getValue())
+                        .build();
+                workload.getLabels().add(label);
+            }
+            workloadRepository.save(workload);
+        }
     }
 }

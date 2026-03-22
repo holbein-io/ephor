@@ -18,4 +18,11 @@
                  stripComments="false"/>
     </changeSet>
 
+    <changeSet id="003-scanner-context-fields" author="ephor">
+        <sqlFile path="003_scanner_context_fields.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+                 stripComments="false"/>
+    </changeSet>
+
 </databaseChangeLog>

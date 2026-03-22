@@ -9,6 +9,7 @@ import lombok.Data;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Data
 public class WorkloadData {
@@ -25,4 +26,6 @@ public class WorkloadData {
     @Valid
     @NotEmpty(message = "Containers list is required and must not be empty")
     private List<ContainerData> containers = new ArrayList<>();
+
+    private Map<String, String> labels;
 }

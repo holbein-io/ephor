@@ -54,6 +54,10 @@ public class Workload {
     @OneToMany(mappedBy = "workload", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Container> containers = new ArrayList<>();
 
+    @Builder.Default
+    @OneToMany(mappedBy = "workload", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<WorkloadLabel> labels = new ArrayList<>();
+
     @PrePersist
     private void onCreate() {
         createdAt = Instant.now();

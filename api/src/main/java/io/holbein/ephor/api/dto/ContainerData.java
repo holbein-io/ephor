@@ -20,6 +20,11 @@ public class ContainerData {
     private Instant imageCreated;
     private Instant baseImageCreated;
 
+    private List<String> detectedEcosystems;
+    private String osFamily;
+    private String osName;
+    private List<String> repoDigests;
+
     @Valid
     private List<VulnerabilityData> vulnerabilities = new ArrayList<>();
 }

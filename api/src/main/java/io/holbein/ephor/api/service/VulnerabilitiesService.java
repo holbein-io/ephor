@@ -7,6 +7,7 @@ import io.holbein.ephor.api.entity.Vulnerability;
 import io.holbein.ephor.api.entity.VulnerabilityInstance;
 import io.holbein.ephor.api.entity.VulnerabilityInstance.InstanceStatus;
 import io.holbein.ephor.api.entity.Workload;
+import io.holbein.ephor.api.entity.WorkloadLabel;
 import io.holbein.ephor.api.exception.ResourceNotFoundException;
 import io.holbein.ephor.api.repositories.CommentRepository;
 import io.holbein.ephor.api.repositories.TriageDecisionRepository;
@@ -73,13 +74,18 @@ public class VulnerabilitiesService {
                             .distinct()
                             .reduce((a, b) -> "mixed")
                             .orElse(null);
+                    Map<String, String> labels = w.getLabels().stream()
+                            .collect(java.util.stream.Collectors.toMap(
+                                    WorkloadLabel::getLabelKey,
+                                    WorkloadLabel::getLabelValue));
                     return new VulnerabilityDetailResponse.WorkloadInfo(
                             w.getId(),
                             w.getNamespace(),
                             w.getName(),
                             w.getKind() != null ? w.getKind().name() : null,
                             imageNames,
-                            status
+                            status,
+                            labels
                     );
                 })
                 .toList();
@@ -109,6 +115,11 @@ public class VulnerabilitiesService {
                 v.getPublishedDate(),
                 v.getFixedVersion(),
                 v.getScannerType(),
+                v.getPackageClass(),
+                v.getPackageType(),
+                v.getReferences(),
+                v.getCvssV3Vector(),
+                v.getCvssV3Score(),
                 v.getFirstDetected(),
                 v.getLastSeen(),
                 workloads.size(),
