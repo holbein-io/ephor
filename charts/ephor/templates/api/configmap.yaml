@@ -9,6 +9,7 @@ data:
   SPRING_DATASOURCE_USERNAME: {{ include "ephor.database.username" . | quote }}
   LOGGING_STRUCTURED_FORMAT_CONSOLE: logstash
   AUTH_ENABLED: "true"
+  AUTH_DEV_ENABLED: "{{ .Values.api.auth.devEnabled | default false }}"
   {{- if .Values.api.auth.idpLogoutUrl }}
   AUTH_IDP_LOGOUT_URL: {{ .Values.api.auth.idpLogoutUrl | quote }}
   {{- end }}

@@ -32,7 +32,7 @@ public class TriageSession {
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(columnDefinition = "text[]")
-    private List<String> attendees;
+    private String[] attendees;
 
     @Builder.Default
     @Column(length = 20)

@@ -13,7 +13,7 @@ public final class SessionMapper {
                 .sessionDate(request.sessionDate())
                 .prepLead(request.prepLead())
                 .prepNotes(request.prepNotes())
-                .attendees(request.attendees())
+                .attendees(request.attendees() != null ? request.attendees().toArray(String[]::new) : null)
                 .notes(request.notes())
                 .build();
     }
@@ -25,7 +25,7 @@ public final class SessionMapper {
                 entity.getStatus(),
                 entity.getPrepLead(),
                 entity.getPrepNotes(),
-                entity.getAttendees(),
+                entity.getAttendees() != null ? java.util.List.of(entity.getAttendees()) : java.util.List.of(),
                 entity.getNotes(),
                 entity.getPrepCompletedAt(),
                 entity.getSessionStartedAt(),

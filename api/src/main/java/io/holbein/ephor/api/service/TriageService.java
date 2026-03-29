@@ -88,7 +88,7 @@ public class TriageService {
             session.setNotes(request.notes());
         }
         if (request.attendees() != null) {
-            session.setAttendees(request.attendees());
+            session.setAttendees(request.attendees().toArray(String[]::new));
         }
         triageSessionRepository.save(session);
         return SessionMapper.toResponse(session);

@@ -34,6 +34,8 @@ api:
       periodSeconds: 5
       failureThreshold: 3
   auth:
+    # Enable dev user injection (bypasses oauth2-proxy, for development only)
+    devEnabled: false
     # IdP logout URL for proper session termination (optional)
     # Example for Keycloak: https://keycloak.example.com/realms/ephor/protocol/openid-connect/logout
     idpLogoutUrl: ""
