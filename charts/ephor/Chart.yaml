@@ -2,8 +2,8 @@ apiVersion: v2
 name: ephor
 description: A Helm chart for deploying Ephor - security monitoring platform
 type: application
-version: 0.2.0
-appVersion: "0.2.0"
+version: 0.2.1
+appVersion: "0.2.1"
 keywords:
   - ephor
   - security
