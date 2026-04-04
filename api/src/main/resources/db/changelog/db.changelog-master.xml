@@ -25,4 +25,11 @@
                  stripComments="false"/>
     </changeSet>
 
+    <changeSet id="004-sbom-documents" author="ephor">
+        <sqlFile path="004_sbom_documents.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+                 stripComments="false"/>
+    </changeSet>
+
 </databaseChangeLog>
