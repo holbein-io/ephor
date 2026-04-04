@@ -1,19 +1,64 @@
-name: Cleanup old package versions
+name: Cleanup packages
 
 on:
+  pull_request:
+    types: [closed]
   schedule:
     - cron: '0 0 * * 0'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
-  cleanup:
+  cleanup-pr-images:
+    name: Delete PR images
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    permissions:
-      packages: write
+    strategy:
+      matrix:
+        package: [api, dashboard]
     steps:
       - uses: actions/delete-package-versions@v5
         with:
-          package-name: ephor-scanner
+          package-name: ${{ github.repository }}/${{ matrix.package }}
           package-type: container
-          min-versions-to-keep: 3
-          delete-only-untagged-versions: false
+          min-versions-to-keep: 0
+          delete-only-pre-release-versions: true
+        continue-on-error: true
+
+      - name: Delete PR tag via API
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PACKAGE_NAME="${{ github.repository }}/${{ matrix.package }}"
+          PR_TAG="pr-${{ github.event.pull_request.number }}"
+          # List versions and find the one with the PR tag
+          gh api \
+            -H "Accept: application/vnd.github+json" \
+            "/orgs/${{ github.repository_owner }}/packages/container/${PACKAGE_NAME}/versions" \
+            --paginate \
+            --jq ".[] | select(.metadata.container.tags[] == \"${PR_TAG}\") | .id" \
+          | while read -r VERSION_ID; do
+              echo "Deleting version $VERSION_ID (tag: $PR_TAG)"
+              gh api \
+                --method DELETE \
+                "/orgs/${{ github.repository_owner }}/packages/container/${PACKAGE_NAME}/versions/${VERSION_ID}"
+            done
+        continue-on-error: true
+
+  cleanup-old-versions:
+    name: Cleanup old versions
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [api, dashboard]
+    steps:
+      - uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ github.repository }}/${{ matrix.package }}
+          package-type: container
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: true
