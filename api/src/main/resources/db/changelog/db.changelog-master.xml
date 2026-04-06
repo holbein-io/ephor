@@ -32,4 +32,11 @@
                  stripComments="false"/>
     </changeSet>
 
+    <changeSet id="005-sbom-packages" author="ephor">
+        <sqlFile path="005_sbom_packages.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+                 stripComments="false"/>
+    </changeSet>
+
 </databaseChangeLog>

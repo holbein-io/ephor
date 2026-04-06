@@ -314,6 +314,56 @@ export interface TriageSessionMetrics {
   calculated_at: string;
 }
 
+export interface SbomMetadata {
+  id: string;
+  image_reference: string;
+  format: string;
+  first_seen: string;
+  last_seen: string;
+  package_count: number;
+}
+
+export interface SbomHistoryEntry {
+  id: string;
+  image_reference: string;
+  image_digest: string;
+  content_hash: string;
+  format: string;
+  scan_group_id: string;
+  first_seen: string;
+  last_seen: string;
+}
+
+export interface SbomCoverage {
+  total_images: number;
+  images_with_sbom: number;
+  format_breakdown: Record<string, number>;
+}
+
+export interface PackageSearchResult {
+  name: string;
+  version: string;
+  type: string;
+  purl: string;
+  license: string;
+  image_reference: string;
+}
+
+export interface TopPackageEntry {
+  name: string;
+  version: string;
+  type: string;
+  image_count: number;
+}
+
+export interface PageResponse<T> {
+  content: T[];
+  total_elements: number;
+  total_pages: number;
+  number: number;
+  size: number;
+}
+
 export interface NamespaceComparison {
   namespace: string;
   total_vulnerabilities: number;

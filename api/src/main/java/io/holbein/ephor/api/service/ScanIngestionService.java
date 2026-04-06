@@ -6,8 +6,8 @@ import io.holbein.ephor.api.dto.ScanIngestResponse;
 import io.holbein.ephor.api.dto.WorkloadData;
 import io.holbein.ephor.api.dto.vulnerability.VulnerabilityData;
 import io.holbein.ephor.api.entity.*;
+import io.holbein.ephor.api.model.enums.ScanStatus;
 import io.holbein.ephor.api.model.enums.SeverityLevel;
-import java.util.Map;
 import io.holbein.ephor.api.repositories.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -61,8 +62,14 @@ public class ScanIngestionService {
         int totalReopened = 0;
         Set<Long> allAutoResolvedVulnIds = new HashSet<>();
 
+        boolean skipAutoResolve = request.getStatus() == ScanStatus.failed;
+        if (skipAutoResolve) {
+            log.warn("Scan status is 'failed' for namespace: {} -- skipping auto-resolve",
+                    request.getNamespace());
+        }
+
         for (WorkloadData workloadData : request.getWorkloads()) {
-            WorkloadProcessingResult result = processWorkload(scan, workloadData);
+            WorkloadProcessingResult result = processWorkload(scan, workloadData, skipAutoResolve);
             totalVulnerabilities += result.vulnerabilityCount;
             criticalVulns += result.criticalCount;
             totalAutoResolved += result.autoResolvedCount;
@@ -86,7 +93,7 @@ public class ScanIngestionService {
                 .build();
     }
 
-    private WorkloadProcessingResult processWorkload(Scan scan, WorkloadData workloadData) {
+    private WorkloadProcessingResult processWorkload(Scan scan, WorkloadData workloadData, boolean skipAutoResolve) {
         // Upsert workload
         Workload workload = workloadRepository.findByNaturalKey(
                 workloadData.getNamespace(),
@@ -116,9 +123,8 @@ public class ScanIngestionService {
         int reopenedCount = 0;
         Set<Long> autoResolvedVulnIds = new HashSet<>();
 
-        // Process each container
         for (ContainerData containerData : workloadData.getContainers()) {
-            ContainerProcessingResult result = processContainer(scan, workload, containerData);
+            ContainerProcessingResult result = processContainer(scan, workload, containerData, skipAutoResolve);
             vulnerabilityCount += result.vulnerabilityCount;
             criticalCount += result.criticalCount;
             autoResolvedCount += result.autoResolvedCount;
@@ -129,7 +135,7 @@ public class ScanIngestionService {
         return new WorkloadProcessingResult(vulnerabilityCount, criticalCount, autoResolvedCount, reopenedCount, autoResolvedVulnIds);
     }
 
-    private ContainerProcessingResult processContainer(Scan scan, Workload workload, ContainerData containerData) {
+    private ContainerProcessingResult processContainer(Scan scan, Workload workload, ContainerData containerData, boolean skipAutoResolve) {
         // Upsert container
         Container container = containerRepository.findByWorkloadIdAndName(workload.getId(), containerData.getName())
                 .orElse(null);
@@ -197,19 +203,22 @@ public class ScanIngestionService {
             }
         }
 
-        List<Long> autoResolvedVulnIds;
-        if (currentVulnerabilityIds.isEmpty()) {
-            autoResolvedVulnIds = vulnerabilityInstanceRepository.findAllOpenVulnerabilityIdsForContainer(container.getId());
-        } else {
-            autoResolvedVulnIds = vulnerabilityInstanceRepository.findVulnerabilityIdsToAutoResolve(container.getId(), currentVulnerabilityIds);
-        }
+        List<Long> autoResolvedVulnIds = List.of();
+        int autoResolvedCount = 0;
 
-        // Auto-resolve vulnerabilities no longer in the scan for this container
-        int autoResolvedCount = autoResolveVulnerabilities(container.getId(), scan.getId(), currentVulnerabilityIds);
+        if (!skipAutoResolve) {
+            if (currentVulnerabilityIds.isEmpty()) {
+                autoResolvedVulnIds = vulnerabilityInstanceRepository.findAllOpenVulnerabilityIdsForContainer(container.getId());
+            } else {
+                autoResolvedVulnIds = vulnerabilityInstanceRepository.findVulnerabilityIdsToAutoResolve(container.getId(), currentVulnerabilityIds);
+            }
 
-        if (autoResolvedCount > 0) {
-            log.info("Auto-resolved {} vulnerability instances for container {} in workload {}/{}",
-                    autoResolvedCount, container.getName(), workload.getNamespace(), workload.getName());
+            autoResolvedCount = autoResolveVulnerabilities(container.getId(), scan.getId(), currentVulnerabilityIds);
+
+            if (autoResolvedCount > 0) {
+                log.info("Auto-resolved {} vulnerability instances for container {} in workload {}/{}",
+                        autoResolvedCount, container.getName(), workload.getNamespace(), workload.getName());
+            }
         }
 
         return new ContainerProcessingResult(vulnerabilityCount, criticalCount, autoResolvedCount, reopenedCount, new HashSet<>(autoResolvedVulnIds));

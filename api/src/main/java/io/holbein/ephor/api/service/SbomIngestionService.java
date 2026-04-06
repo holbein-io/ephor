@@ -28,10 +28,13 @@ public class SbomIngestionService {
     private static final Set<String> SUPPORTED_FORMATS = Set.of("cyclonedx", "spdx");
 
     private final SbomDocumentRepository sbomDocumentRepository;
+    private final SbomIndexingService sbomIndexingService;
     private final ObjectMapper canonicalMapper;
 
-    public SbomIngestionService(SbomDocumentRepository sbomDocumentRepository) {
+    public SbomIngestionService(SbomDocumentRepository sbomDocumentRepository,
+                                SbomIndexingService sbomIndexingService) {
         this.sbomDocumentRepository = sbomDocumentRepository;
+        this.sbomIndexingService = sbomIndexingService;
         this.canonicalMapper = new ObjectMapper();
         this.canonicalMapper.configure(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS, true);
         this.canonicalMapper.configure(SerializationFeature.INDENT_OUTPUT, false);
@@ -78,6 +81,7 @@ public class SbomIngestionService {
                 .build();
 
         doc = sbomDocumentRepository.saveAndFlush(doc);
+        sbomIndexingService.indexSbom(doc);
 
         log.info("Stored new SBOM for image: {}, format: {}, hash: {}",
                 request.getImageReference(), request.getFormat(), contentHash);

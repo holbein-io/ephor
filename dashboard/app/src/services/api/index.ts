@@ -14,3 +14,4 @@ export { authService } from './auth.service';
 export { auditService } from './audit.service';
 export { commentsService } from './comments.service';
 export { usersService } from './users.service';
+export { sbomService } from './sbom.service';
