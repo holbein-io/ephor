@@ -1,7 +1,7 @@
 package io.holbein.ephor.api.service;
 
 import io.holbein.ephor.api.dto.sbom.SbomIngestRequest;
-import io.holbein.ephor.api.dto.sbom.TopPackageEntry;
+import io.holbein.ephor.api.dto.sbom.SbomPackageResponses;
 import io.holbein.ephor.api.entity.SbomPackage;
 import io.holbein.ephor.api.repositories.SbomDocumentRepository;
 import io.holbein.ephor.api.repositories.SbomPackageRepository;
@@ -87,7 +87,7 @@ class SbomIndexingServiceTest extends BaseIntegrationTest {
                 Map.of("name", "openssl", "version", "3.0.12")
         ));
 
-        Page<TopPackageEntry> top = sbomPackageQueryService.getTopPackages(PageRequest.of(0, 10));
+        Page<SbomPackageResponses.TopPackage> top = sbomPackageQueryService.getTopPackages(PageRequest.of(0, 10));
         assertThat(top.getContent().get(0).getName()).isEqualTo("openssl");
         assertThat(top.getContent().get(0).getImageCount()).isEqualTo(2);
     }

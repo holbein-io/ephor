@@ -4,13 +4,15 @@ import { Search, Package, ArrowUpDown } from 'lucide-react';
 import { PackageSearchResult, TopPackageEntry } from '../types';
 import { sbomService } from '../services/api';
 import { LicenseAudit } from '../components/sbom/LicenseAudit';
+import { SbomExplorer } from '../components/sbom/SbomExplorer';
 import { cn } from '../utils';
 
-type Tab = 'packages' | 'licenses';
+type Tab = 'packages' | 'licenses' | 'sboms';
 
 const tabs: { key: Tab; label: string }[] = [
   { key: 'packages', label: 'Packages' },
   { key: 'licenses', label: 'Licenses' },
+  { key: 'sboms', label: 'SBOMs' },
 ];
 
 export function Inventory() {
@@ -43,6 +45,7 @@ export function Inventory() {
 
       {activeTab === 'packages' && <PackageSearch />}
       {activeTab === 'licenses' && <LicenseAudit />}
+      {activeTab === 'sboms' && <SbomExplorer />}
     </div>
   );
 }

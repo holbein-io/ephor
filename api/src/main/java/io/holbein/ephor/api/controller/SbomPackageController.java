@@ -1,8 +1,7 @@
 package io.holbein.ephor.api.controller;
 
-import io.holbein.ephor.api.dto.sbom.LicenseDistributionEntry;
 import io.holbein.ephor.api.dto.sbom.PackageSearchResult;
-import io.holbein.ephor.api.dto.sbom.TopPackageEntry;
+import io.holbein.ephor.api.dto.sbom.SbomPackageResponses;
 import io.holbein.ephor.api.service.SbomQueryService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -40,13 +39,13 @@ public class SbomPackageController {
     }
 
     @GetMapping("/top")
-    public Page<TopPackageEntry> topPackages(
+    public Page<SbomPackageResponses.TopPackage> topPackages(
             @RequestParam(value = "size", defaultValue = "20") int size) {
         return sbomQueryService.getTopPackages(PageRequest.of(0, size));
     }
 
     @GetMapping("/licenses")
-    public List<LicenseDistributionEntry> licenseDistribution() {
+    public List<SbomPackageResponses.LicenseDistribution> licenseDistribution() {
         return sbomQueryService.getLicenseDistribution();
     }
 

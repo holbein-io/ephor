@@ -53,4 +53,8 @@ export const sbomService = {
   async getPreScanAlertCount(): Promise<{ count: number }> {
     return apiClient.get('/sbom/alerts/pre-scan/count');
   },
+
+  async listImages(): Promise<string[]> {
+    return apiClient.get('/sbom/images');
+  },
 };

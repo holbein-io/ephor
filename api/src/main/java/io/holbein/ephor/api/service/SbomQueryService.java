@@ -43,6 +43,10 @@ public class SbomQueryService {
         return sbomDocumentRepository.findLatestByImageReference(imageReference);
     }
 
+    public List<String> listImageReferences() {
+        return sbomDocumentRepository.findAllDistinctImageReferences();
+    }
+
     public List<SbomHistoryEntry> getHistory(String imageReference) {
         return sbomDocumentRepository.findAllByImageReferenceOrderByLastSeenDesc(imageReference)
                 .stream()
@@ -93,9 +97,9 @@ public class SbomQueryService {
                 : sbomPackageRepository.findImagesByPackageName(name);
     }
 
-    public Page<TopPackageEntry> getTopPackages(Pageable pageable) {
+    public Page<SbomPackageResponses.TopPackage> getTopPackages(Pageable pageable) {
         return sbomPackageRepository.findTopPackages(pageable)
-                .map(row -> TopPackageEntry.builder()
+                .map(row -> SbomPackageResponses.TopPackage.builder()
                         .name((String) row[0])
                         .version((String) row[1])
                         .type((String) row[2])
@@ -103,9 +107,9 @@ public class SbomQueryService {
                         .build());
     }
 
-    public List<LicenseDistributionEntry> getLicenseDistribution() {
+    public List<SbomPackageResponses.LicenseDistribution> getLicenseDistribution() {
         return sbomPackageRepository.getLicenseDistribution().stream()
-                .map(row -> LicenseDistributionEntry.builder()
+                .map(row -> SbomPackageResponses.LicenseDistribution.builder()
                         .license((String) row[0])
                         .packageCount((Long) row[1])
                         .imageCount((Long) row[2])
@@ -131,9 +135,9 @@ public class SbomQueryService {
         Map<String, SbomPackage> packagesA = indexByName(sbomPackageRepository.findBySbomDocumentId(sbomIdA));
         Map<String, SbomPackage> packagesB = indexByName(sbomPackageRepository.findBySbomDocumentId(sbomIdB));
 
-        List<PackageDiff> added = new ArrayList<>();
-        List<PackageDiff> removed = new ArrayList<>();
-        List<PackageChangeDiff> changed = new ArrayList<>();
+        List<SbomDiffResult.PackageEntry> added = new ArrayList<>();
+        List<SbomDiffResult.PackageEntry> removed = new ArrayList<>();
+        List<SbomDiffResult.VersionChange> changed = new ArrayList<>();
         int unchanged = 0;
 
         for (Map.Entry<String, SbomPackage> entry : packagesB.entrySet()) {
@@ -141,9 +145,9 @@ public class SbomQueryService {
             SbomPackage pkgA = packagesA.get(entry.getKey());
 
             if (pkgA == null) {
-                added.add(toPackageDiff(pkgB));
+                added.add(toPackageEntry(pkgB));
             } else if (!pkgA.getVersion().equals(pkgB.getVersion())) {
-                changed.add(PackageChangeDiff.builder()
+                changed.add(SbomDiffResult.VersionChange.builder()
                         .name(pkgB.getName())
                         .type(pkgB.getType())
                         .oldVersion(pkgA.getVersion())
@@ -156,7 +160,7 @@ public class SbomQueryService {
 
         for (Map.Entry<String, SbomPackage> entry : packagesA.entrySet()) {
             if (!packagesB.containsKey(entry.getKey())) {
-                removed.add(toPackageDiff(entry.getValue()));
+                removed.add(toPackageEntry(entry.getValue()));
             }
         }
 
@@ -285,8 +289,8 @@ public class SbomQueryService {
         return index;
     }
 
-    private PackageDiff toPackageDiff(SbomPackage pkg) {
-        return PackageDiff.builder()
+    private SbomDiffResult.PackageEntry toPackageEntry(SbomPackage pkg) {
+        return SbomDiffResult.PackageEntry.builder()
                 .name(pkg.getName())
                 .version(pkg.getVersion())
                 .type(pkg.getType())

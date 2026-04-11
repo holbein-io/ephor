@@ -73,6 +73,11 @@ public class SbomController {
         return ResponseEntity.ok(history);
     }
 
+    @GetMapping("/images")
+    public List<String> listImages() {
+        return sbomQueryService.listImageReferences();
+    }
+
     @GetMapping("/metadata")
     public ResponseEntity<SbomMetadata> getMetadata(@RequestParam("image_reference") String imageReference) {
         return sbomQueryService.getMetadata(imageReference)
