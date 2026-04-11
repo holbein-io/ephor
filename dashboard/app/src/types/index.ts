@@ -364,6 +364,44 @@ export interface PageResponse<T> {
   size: number;
 }
 
+export interface LicenseDistributionEntry {
+  license: string;
+  package_count: number;
+  image_count: number;
+}
+
+export interface SbomDiffResult {
+  image_reference: string;
+  added: PackageDiff[];
+  removed: PackageDiff[];
+  changed: PackageChangeDiff[];
+  unchanged_count: number;
+}
+
+export interface PackageDiff {
+  name: string;
+  version: string;
+  type: string;
+  license: string;
+}
+
+export interface PackageChangeDiff {
+  name: string;
+  type: string;
+  old_version: string;
+  new_version: string;
+}
+
+export interface PreScanAlert {
+  cve_id: string;
+  severity: string;
+  package_name: string;
+  package_version: string;
+  title: string;
+  image_reference: string;
+  sbom_package_version: string;
+}
+
 export interface NamespaceComparison {
   namespace: string;
   total_vulnerabilities: number;

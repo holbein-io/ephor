@@ -1,6 +1,8 @@
 package io.holbein.ephor.api.controller;
 
+import io.holbein.ephor.api.dto.sbom.PreScanAlert;
 import io.holbein.ephor.api.dto.sbom.SbomCoverageResponse;
+import io.holbein.ephor.api.dto.sbom.SbomDiffResult;
 import io.holbein.ephor.api.dto.sbom.SbomHistoryEntry;
 import io.holbein.ephor.api.dto.sbom.SbomIngestRequest;
 import io.holbein.ephor.api.dto.sbom.SbomIngestResponse;
@@ -24,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Slf4j
 @RestController
@@ -101,6 +104,23 @@ public class SbomController {
     @GetMapping("/coverage")
     public SbomCoverageResponse getCoverage() {
         return sbomQueryService.getCoverage();
+    }
+
+    @GetMapping("/diff")
+    public SbomDiffResult diff(@RequestParam("sbom_id_a") UUID sbomIdA,
+                               @RequestParam("sbom_id_b") UUID sbomIdB) {
+        return sbomQueryService.diff(sbomIdA, sbomIdB);
+    }
+
+    @GetMapping("/alerts/pre-scan")
+    public List<PreScanAlert> getPreScanAlerts(
+            @RequestParam(value = "limit", defaultValue = "50") int limit) {
+        return sbomQueryService.findPreScanAlerts(limit);
+    }
+
+    @GetMapping("/alerts/pre-scan/count")
+    public Map<String, Long> getPreScanAlertCount() {
+        return Map.of("count", sbomQueryService.countPreScanAlerts());
     }
 
     @PostMapping("/availability")

@@ -1,9 +1,53 @@
 import { useState, useCallback, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Package, ArrowUpDown } from 'lucide-react';
+import { PackageSearchResult, TopPackageEntry } from '../types';
 import { sbomService } from '../services/api';
+import { LicenseAudit } from '../components/sbom/LicenseAudit';
+import { cn } from '../utils';
+
+type Tab = 'packages' | 'licenses';
+
+const tabs: { key: Tab; label: string }[] = [
+  { key: 'packages', label: 'Packages' },
+  { key: 'licenses', label: 'Licenses' },
+];
 
 export function Inventory() {
+  const [activeTab, setActiveTab] = useState<Tab>('packages');
+
+  return (
+    <div className="space-y-3 max-w-[1400px] mx-auto">
+      <div className="flex items-start justify-between animate-fade-up">
+        <h1 className="font-display text-2xl italic text-text-primary tracking-tight">
+          Software Inventory
+        </h1>
+      </div>
+
+      <div className="flex items-center gap-0.5 animate-fade-up delay-1">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
+            className={cn(
+              'px-4 py-2 rounded-lg text-[13px] font-medium transition-all',
+              activeTab === tab.key
+                ? 'text-accent bg-accent-dim'
+                : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover'
+            )}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'packages' && <PackageSearch />}
+      {activeTab === 'licenses' && <LicenseAudit />}
+    </div>
+  );
+}
+
+function PackageSearch() {
   const [searchValue, setSearchValue] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(0);
@@ -31,29 +75,22 @@ export function Inventory() {
   });
 
   const showSearch = searchQuery.length >= 2;
-  const results = showSearch ? searchResults?.content : topPackages?.content;
   const totalElements = showSearch ? searchResults?.total_elements : topPackages?.total_elements;
   const totalPages = showSearch ? searchResults?.total_pages : 1;
   const isLoading = showSearch ? isSearching : isLoadingTop;
+  const results = showSearch ? searchResults?.content : topPackages?.content;
 
   return (
-    <div className="space-y-3 max-w-[1400px] mx-auto">
-      <div className="flex items-start justify-between animate-fade-up">
-        <div>
-          <h1 className="font-display text-2xl italic text-text-primary tracking-tight">
-            Software Inventory
-          </h1>
-          {totalElements !== undefined && (
-            <p className="text-[13px] text-text-secondary mt-1">
-              {showSearch
-                ? `${totalElements.toLocaleString()} packages matching "${searchQuery}"`
-                : `Top ${results?.length || 0} packages across fleet`}
-            </p>
-          )}
-        </div>
-      </div>
+    <>
+      {totalElements !== undefined && (
+        <p className="text-[13px] text-text-secondary -mt-1">
+          {showSearch
+            ? `${totalElements.toLocaleString()} packages matching "${searchQuery}"`
+            : `Top ${results?.length || 0} packages across fleet`}
+        </p>
+      )}
 
-      <div className="bg-bg-secondary border border-border rounded-2xl px-[18px] py-3.5 flex items-center gap-3 animate-fade-up delay-1">
+      <div className="bg-bg-secondary border border-border rounded-2xl px-[18px] py-3.5 flex items-center gap-3">
         <div className="flex items-center gap-2 bg-bg-tertiary border border-border rounded-lg px-3 py-2 min-w-[300px] flex-1">
           <Search className="h-3.5 w-3.5 text-text-tertiary flex-shrink-0" />
           <input
@@ -66,7 +103,7 @@ export function Inventory() {
         </div>
       </div>
 
-      <div className="bg-bg-secondary border border-border rounded-2xl overflow-hidden animate-fade-up delay-2">
+      <div className="bg-bg-secondary border border-border rounded-2xl overflow-hidden">
         {isLoading ? (
           <div className="px-6 py-12 text-center">
             <div className="inline-block h-5 w-5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
@@ -85,48 +122,29 @@ export function Inventory() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
-                    Package
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
-                    Version
-                  </th>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
-                    Type
-                  </th>
+                  <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Package</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Version</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Type</th>
                   {showSearch ? (
                     <>
-                      <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
-                        License
-                      </th>
-                      <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
-                        Image
-                      </th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">License</th>
+                      <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Image</th>
                     </>
                   ) : (
                     <th className="px-5 py-3 text-right text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
-                      <span className="inline-flex items-center gap-1">
-                        Images <ArrowUpDown className="h-3 w-3" />
-                      </span>
+                      <span className="inline-flex items-center gap-1">Images <ArrowUpDown className="h-3 w-3" /></span>
                     </th>
                   )}
                 </tr>
               </thead>
               <tbody>
                 {results.map((pkg, i) => (
-                  <tr
-                    key={`${pkg.name}-${pkg.version}-${i}`}
-                    className="border-b border-border/50 last:border-b-0 hover:bg-bg-hover transition-colors"
-                  >
+                  <tr key={`${pkg.name}-${pkg.version}-${i}`} className="border-b border-border/50 last:border-b-0 hover:bg-bg-hover transition-colors">
                     <td className="px-5 py-3.5">
-                      <span className="font-mono text-[13px] font-medium text-text-primary">
-                        {pkg.name}
-                      </span>
+                      <span className="font-mono text-[13px] font-medium text-text-primary">{pkg.name}</span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="font-mono text-[12px] text-text-secondary">
-                        {pkg.version}
-                      </span>
+                      <span className="font-mono text-[12px] text-text-secondary">{pkg.version}</span>
                     </td>
                     <td className="px-5 py-3.5">
                       {pkg.type && (
@@ -137,20 +155,14 @@ export function Inventory() {
                     </td>
                     {showSearch ? (
                       <>
-                        <td className="px-5 py-3.5 text-[12px] text-text-secondary">
-                          {(pkg as any).license || '-'}
-                        </td>
+                        <td className="px-5 py-3.5 text-[12px] text-text-secondary">{(pkg as PackageSearchResult).license || '-'}</td>
                         <td className="px-5 py-3.5">
-                          <span className="font-mono text-[11px] text-text-tertiary truncate block max-w-[250px]">
-                            {(pkg as any).image_reference}
-                          </span>
+                          <span className="font-mono text-[11px] text-text-tertiary truncate block max-w-[250px]">{(pkg as PackageSearchResult).image_reference}</span>
                         </td>
                       </>
                     ) : (
                       <td className="px-5 py-3.5 text-right">
-                        <span className="font-mono text-[13px] font-medium text-accent">
-                          {(pkg as any).image_count}
-                        </span>
+                        <span className="font-mono text-[13px] font-medium text-accent">{(pkg as TopPackageEntry).image_count}</span>
                       </td>
                     )}
                   </tr>
@@ -160,9 +172,7 @@ export function Inventory() {
 
             {showSearch && totalPages !== undefined && totalPages > 1 && (
               <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-                <span className="text-[12px] text-text-tertiary">
-                  Page {page + 1} of {totalPages}
-                </span>
+                <span className="text-[12px] text-text-tertiary">Page {page + 1} of {totalPages}</span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPage(p => Math.max(0, p - 1))}
@@ -184,6 +194,6 @@ export function Inventory() {
           </>
         )}
       </div>
-    </div>
+    </>
   );
 }

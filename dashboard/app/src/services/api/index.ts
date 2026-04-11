@@ -1,8 +1,3 @@
-/**
- * Centralized API services exports
- * All API operations are organized into logical service modules
- */
-
 export { apiClient } from './client';
 export { vulnerabilityService } from './vulnerabilities.service';
 export { triageService } from './triage.service';

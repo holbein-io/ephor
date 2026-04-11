@@ -23,7 +23,7 @@ class SbomIndexingServiceTest extends BaseIntegrationTest {
     private SbomIngestionService sbomIngestionService;
 
     @Autowired
-    private SbomPackageQueryService sbomPackageQueryService;
+    private SbomQueryService sbomPackageQueryService;
 
     @Autowired
     private SbomDocumentRepository sbomDocumentRepository;
