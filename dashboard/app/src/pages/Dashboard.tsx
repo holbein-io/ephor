@@ -5,6 +5,8 @@ import { BentoCard } from '../components/dashboard/BentoCard';
 import { StatusOverview } from '../components/dashboard/StatusOverview';
 import { SeverityHeatmap } from '../components/SeverityHeatmap';
 import { ActivityFeed } from '../components/ActivityFeed';
+import { SbomCoverage } from '../components/dashboard/SbomCoverage';
+import { PreScanAlerts } from '../components/dashboard/PreScanAlerts';
 import { dashboardService } from '../services/api';
 import { useUser } from '../contexts/UserContext';
 
@@ -86,6 +88,14 @@ export function Dashboard() {
               </div>
             </BentoCard>
           )}
+
+          <BentoCard title="SBOM Coverage" span={3}>
+            <SbomCoverage />
+          </BentoCard>
+
+          <BentoCard title="Pre-Scan Alerts" span={3}>
+            <PreScanAlerts />
+          </BentoCard>
         </div>
       </div>
     </div>

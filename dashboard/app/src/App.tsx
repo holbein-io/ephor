@@ -8,6 +8,7 @@ import { VulnerabilityDetail } from './pages/VulnerabilityDetail';
 import { Escalations } from './pages/Escalations';
 import { Triage } from './pages/Triage';
 import { MyItems } from './pages/MyItems';
+import { Inventory } from './pages/Inventory';
 import { UserProvider } from './contexts/UserContext';
 import { UserDirectoryProvider } from './contexts/UserDirectoryContext';
 import { VulnerabilityListProvider } from './contexts/VulnerabilityListContext';
@@ -37,6 +38,7 @@ function App() {
                 <Route path="/escalations" element={<Escalations />} />
                 <Route path="/triage" element={<Triage />} />
                 <Route path="/my-items" element={<MyItems />} />
+                <Route path="/inventory" element={<Inventory />} />
               </Routes>
             </Layout>
           </Router>

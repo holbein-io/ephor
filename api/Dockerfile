@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM eclipse-temurin:21-jdk-alpine@sha256:d702e2d534819da0573af42ee880bfddf6f3497b9e7a3a9f5288a127b231b619 AS build
 
 WORKDIR /workspace
 
@@ -15,7 +15,7 @@ COPY api/src api/src
 
 RUN ./gradlew :api:bootJar --no-daemon -x test
 
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre-alpine@sha256:96c9c9f4da36495d995e4fd849491f9ac53649278bd120a32c3c8860cd5c7096
 
 RUN addgroup -S app && adduser -S app -G app
 
