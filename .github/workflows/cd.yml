@@ -22,6 +22,7 @@ jobs:
   build-api:
     name: Build & Push API Image
     runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'pull_request' && 'staging' || '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -52,7 +53,7 @@ jobs:
         with:
           context: .
           file: api/Dockerfile
-          push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
@@ -62,6 +63,7 @@ jobs:
   build-dashboard:
     name: Build & Push Dashboard Image
     runs-on: ubuntu-latest
+    environment: ${{ github.event_name == 'pull_request' && 'staging' || '' }}
 
     steps:
       - uses: actions/checkout@v4
@@ -92,7 +94,7 @@ jobs:
         with:
           context: dashboard/app
           file: dashboard/app/Dockerfile
-          push: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/amd64,linux/arm64
