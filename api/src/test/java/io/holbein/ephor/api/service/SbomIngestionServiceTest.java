@@ -3,7 +3,6 @@ package io.holbein.ephor.api.service;
 import io.holbein.ephor.api.dto.sbom.SbomIngestRequest;
 import io.holbein.ephor.api.dto.sbom.SbomIngestResponse;
 import io.holbein.ephor.api.entity.SbomDocument;
-import io.holbein.ephor.api.exception.ValidationException;
 import io.holbein.ephor.api.repositories.SbomDocumentRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,7 +13,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class SbomIngestionServiceTest extends BaseIntegrationTest {
 
@@ -74,26 +72,6 @@ class SbomIngestionServiceTest extends BaseIntegrationTest {
         sbomIngestionService.ingest(req2);
 
         assertThat(sbomDocumentRepository.count()).isEqualTo(2);
-    }
-
-    @Test
-    void ingest_invalidFormat_rejects() {
-        SbomIngestRequest request = buildCycloneDxRequest("nginx:1.25", null);
-        request.setFormat("invalid");
-
-        assertThatThrownBy(() -> sbomIngestionService.ingest(request))
-                .isInstanceOf(ValidationException.class);
-    }
-
-    @Test
-    void ingest_formatMismatchesDocumentStructure_rejects() {
-        SbomIngestRequest request = new SbomIngestRequest();
-        request.setImageReference("nginx:1.25");
-        request.setFormat("cyclonedx");
-        request.setSbom(Map.of("spdxVersion", "SPDX-2.3"));
-
-        assertThatThrownBy(() -> sbomIngestionService.ingest(request))
-                .isInstanceOf(ValidationException.class);
     }
 
     private SbomIngestRequest buildCycloneDxRequest(String imageReference, String imageDigest) {

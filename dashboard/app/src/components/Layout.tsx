@@ -18,6 +18,7 @@ type NavItem = {
 const navigation: NavItem[] = [
   { name: 'Dashboard', href: '/' },
   { name: 'Vulnerabilities', href: '/vulnerabilities', badgeKey: 'criticalHigh' },
+  { name: 'Inventory', href: '/inventory' },
   { name: 'Triage', href: '/triage' },
   { name: 'Escalations', href: '/escalations', badgeKey: 'escalations' },
 ];
