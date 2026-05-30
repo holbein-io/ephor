@@ -15,8 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HexFormat;
-import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -49,7 +51,7 @@ public class SbomIngestionService {
         byte[] canonicalJson = serializeCanonical(request.getSbom());
         validateSize(canonicalJson);
 
-        // Hash a stable projection, not the raw doc: Trivy restamps serialNumber/timestamp each run and breaks dedup.
+        // Hash the package identities, not the raw doc: Trivy restamps serialNumber/timestamp/bom-ref each run.
         String contentHash = computeSha256(serializeCanonical(stableProjection(request.getFormat(), request.getSbom())));
 
         Optional<SbomDocument> existing = sbomDocumentRepository
@@ -120,29 +122,26 @@ public class SbomIngestionService {
         }
     }
 
-    // Copy with run-specific fields stripped, used only for hashing; the full document is still stored.
-    @SuppressWarnings("unchecked")
+    // Hash only the sorted package identities (name/version/purl). Trivy restamps serialNumber,
+    // timestamp and a random per-component bom-ref every run, so hashing anything else breaks dedup.
     private Map<String, Object> stableProjection(String format, Map<String, Object> sbom) {
-        Map<String, Object> copy = new LinkedHashMap<>(sbom);
+        List<String> identities = new ArrayList<>();
         switch (format) {
-            case "cyclonedx" -> {
-                copy.remove("serialNumber");
-                if (copy.get("metadata") instanceof Map<?, ?> metadata) {
-                    Map<String, Object> metadataCopy = new LinkedHashMap<>((Map<String, Object>) metadata);
-                    metadataCopy.remove("timestamp");
-                    copy.put("metadata", metadataCopy);
-                }
-            }
-            case "spdx" -> {
-                copy.remove("documentNamespace");
-                if (copy.get("creationInfo") instanceof Map<?, ?> creationInfo) {
-                    Map<String, Object> creationInfoCopy = new LinkedHashMap<>((Map<String, Object>) creationInfo);
-                    creationInfoCopy.remove("created");
-                    copy.put("creationInfo", creationInfoCopy);
+            case "cyclonedx" -> collectIdentities(sbom.get("components"), "name", "version", "purl", identities);
+            case "spdx" -> collectIdentities(sbom.get("packages"), "name", "versionInfo", "downloadLocation", identities);
+        }
+        identities.sort(Comparator.naturalOrder());
+        return Map.of("identities", identities);
+    }
+
+    private void collectIdentities(Object items, String nameKey, String versionKey, String idKey, List<String> out) {
+        if (items instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> entry) {
+                    out.add(entry.get(nameKey) + " " + entry.get(versionKey) + " " + entry.get(idKey));
                 }
             }
         }
-        return copy;
     }
 
     private byte[] serializeCanonical(Map<String, Object> sbom) {

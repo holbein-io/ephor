@@ -75,14 +75,15 @@ class SbomIngestionServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void ingest_sameContentDifferentSerialNumberAndTimestamp_deduplicates() {
+    void ingest_samePackagesVolatileMetadata_deduplicates() {
+        // Same package set, but Trivy's per-run serialNumber, timestamp and bom-ref all differ.
         SbomIngestRequest first = buildCycloneDxRequest("nginx:1.25", null);
         first.setSbom(Map.of(
                 "bomFormat", "CycloneDX",
                 "specVersion", "1.5",
                 "serialNumber", "urn:uuid:11111111-1111-1111-1111-111111111111",
                 "metadata", Map.of("timestamp", "2026-05-01T00:00:00Z"),
-                "components", List.of(Map.of("name", "openssl", "version", "3.0.12", "type", "library"))
+                "components", List.of(Map.of("bom-ref", "aaaa1111", "name", "openssl", "version", "3.0.12", "type", "library"))
         ));
 
         SbomIngestRequest second = buildCycloneDxRequest("nginx:1.25", null);
@@ -91,7 +92,7 @@ class SbomIngestionServiceTest extends BaseIntegrationTest {
                 "specVersion", "1.5",
                 "serialNumber", "urn:uuid:22222222-2222-2222-2222-222222222222",
                 "metadata", Map.of("timestamp", "2026-05-30T12:00:00Z"),
-                "components", List.of(Map.of("name", "openssl", "version", "3.0.12", "type", "library"))
+                "components", List.of(Map.of("bom-ref", "bbbb2222", "name", "openssl", "version", "3.0.12", "type", "library"))
         ));
 
         sbomIngestionService.ingest(first);
@@ -99,6 +100,22 @@ class SbomIngestionServiceTest extends BaseIntegrationTest {
 
         assertThat(response.getStatus()).isEqualTo("updated");
         assertThat(sbomDocumentRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void ingest_differentPackageSet_createsSeparateDocuments() {
+        SbomIngestRequest first = buildCycloneDxRequest("nginx:1.25", null);
+        SbomIngestRequest second = buildCycloneDxRequest("nginx:1.25", null);
+        second.setSbom(Map.of(
+                "bomFormat", "CycloneDX",
+                "specVersion", "1.5",
+                "components", List.of(Map.of("name", "openssl", "version", "3.0.13", "type", "library"))
+        ));
+
+        sbomIngestionService.ingest(first);
+        sbomIngestionService.ingest(second);
+
+        assertThat(sbomDocumentRepository.count()).isEqualTo(2);
     }
 
     private SbomIngestRequest buildCycloneDxRequest(String imageReference, String imageDigest) {
