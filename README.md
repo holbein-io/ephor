@@ -1,17 +1,24 @@
 # Ephor
 
-Self-hosted vulnerability management platform for Kubernetes workloads.
+**Everything that happens after the scan.**
 
-Ephor ingests container image scan results and provides a centralized dashboard for triage workflows, escalation tracking, and remediation planning. It gives security and platform teams a single pane of glass for understanding and acting on vulnerabilities across their clusters.
+Trivy and Grype find your CVEs. Then the JSON scrolls off the terminal and nobody tracks what got fixed. Ephor is the open-source dashboard, triage, and remediation layer for Kubernetes vulnerabilities — self-hosted, your scan data never leaves your cluster.
+
+[Website](https://holbein.io) · [Docs](https://docs.holbein.io) · [Blog](https://holbein.io/blog) · [Scanner agent](https://github.com/holbein-io/ephor-scanner)
+
+<!-- TODO: add hero screenshot/GIF once recorded, e.g.:
+![Ephor dashboard](docs/images/dashboard.png)
+-->
 
 ## Features
 
-- Dashboard overview with key metrics, severity breakdowns, and trend charts
-- Vulnerability search and filtering across images, namespaces, and clusters
-- Triage workflows with status management and comments
-- Escalation management for critical findings
-- Remediation tracking and SLA compliance monitoring
-- Scan ingestion REST API
+- **Pre-scan CVE alerts** — Ephor indexes the SBOM of every image it sees and matches known CRITICAL/HIGH CVEs against the whole fleet by exact package and version. When a vulnerable package is already sitting in images that haven't been scanned yet, you find out now, not a scan cycle later.
+- **Unified dashboard** — severity breakdowns, trend charts, and search across every image, namespace, and cluster
+- **Triage workflows** — status management, comments, and a full audit trail
+- **Escalation management** for critical findings
+- **Remediation tracking** with SLA monitoring
+- **SBOM inventory** — package search, version diff, and license breakdown across images
+- **Scan ingestion REST API**
 - Multi-arch container images (amd64/arm64)
 
 ## Architecture

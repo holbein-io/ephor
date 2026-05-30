@@ -153,6 +153,56 @@ class SbomQueryServiceTest extends BaseIntegrationTest {
         assertThat(sbomQueryService.countPreScanAlerts()).isEqualTo(1);
     }
 
+    @Test
+    void findPreScanAlerts_ignoresImageRunningPatchedVersionOfSamePackage() {
+        // A CVE is known for openssl 3.0.11 (found while scanning another image)...
+        ScanIngestRequest scanRequest = new ScanIngestRequest();
+        scanRequest.setNamespace("ns1");
+        scanRequest.setScanLabel("scan-1");
+        scanRequest.setStatus(ScanStatus.completed);
+        scanRequest.setStartedAt(Instant.now());
+
+        WorkloadData workload = new WorkloadData();
+        workload.setNamespace("ns1");
+        workload.setName("web-app");
+        workload.setKind(Workload.WorkloadKind.Deployment);
+
+        ContainerData container = new ContainerData();
+        container.setName("nginx");
+        container.setImageName("nginx");
+        container.setImageTag("1.25");
+
+        VulnerabilityData vuln = new VulnerabilityData();
+        vuln.setCveId("CVE-2025-0001");
+        vuln.setPackageName("openssl");
+        vuln.setPackageVersion("3.0.11");
+        vuln.setSeverity(SeverityLevel.CRITICAL);
+        vuln.setScannerType("trivy");
+        vuln.setTitle("OpenSSL buffer overflow");
+
+        container.setVulnerabilities(List.of(vuln));
+        workload.setContainers(List.of(container));
+        scanRequest.setWorkloads(List.of(workload));
+        scanIngestionService.ingestScan(scanRequest);
+
+        // ...but redis:7.2 ships the PATCHED openssl 3.0.12, so it must NOT be flagged.
+        SbomIngestRequest sbomRequest = new SbomIngestRequest();
+        sbomRequest.setImageReference("redis:7.2");
+        sbomRequest.setScanGroupId(UUID.randomUUID());
+        sbomRequest.setFormat("cyclonedx");
+        sbomRequest.setSbom(Map.of(
+                "bomFormat", "CycloneDX",
+                "specVersion", "1.5",
+                "components", List.of(
+                        Map.of("name", "openssl", "version", "3.0.12", "purl", "pkg:debian/openssl@3.0.12")
+                )
+        ));
+        sbomIngestionService.ingest(sbomRequest);
+
+        assertThat(sbomQueryService.findPreScanAlerts(50)).isEmpty();
+        assertThat(sbomQueryService.countPreScanAlerts()).isZero();
+    }
+
     private SbomIngestResponse ingestCycloneDx(String imageReference, List<Map<String, String>> components) {
         SbomIngestRequest request = new SbomIngestRequest();
         request.setImageReference(imageReference);
