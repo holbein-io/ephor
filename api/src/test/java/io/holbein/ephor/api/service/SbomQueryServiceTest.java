@@ -203,6 +203,47 @@ class SbomQueryServiceTest extends BaseIntegrationTest {
         assertThat(sbomQueryService.countPreScanAlerts()).isZero();
     }
 
+    @Test
+    void findPreScanAlerts_usesLatestSbomNotStaleVulnerableVersion() {
+        // Known CVE for openssl 3.0.11, found while scanning another image.
+        ScanIngestRequest scanRequest = new ScanIngestRequest();
+        scanRequest.setNamespace("ns1");
+        scanRequest.setScanLabel("scan-1");
+        scanRequest.setStatus(ScanStatus.completed);
+        scanRequest.setStartedAt(Instant.now());
+
+        WorkloadData workload = new WorkloadData();
+        workload.setNamespace("ns1");
+        workload.setName("web-app");
+        workload.setKind(Workload.WorkloadKind.Deployment);
+
+        ContainerData container = new ContainerData();
+        container.setName("nginx");
+        container.setImageName("nginx");
+        container.setImageTag("1.25");
+
+        VulnerabilityData vuln = new VulnerabilityData();
+        vuln.setCveId("CVE-2025-0001");
+        vuln.setPackageName("openssl");
+        vuln.setPackageVersion("3.0.11");
+        vuln.setSeverity(SeverityLevel.CRITICAL);
+        vuln.setScannerType("trivy");
+        vuln.setTitle("OpenSSL buffer overflow");
+
+        container.setVulnerabilities(List.of(vuln));
+        workload.setContainers(List.of(container));
+        scanRequest.setWorkloads(List.of(workload));
+        scanIngestionService.ingestScan(scanRequest);
+
+        // redis:7.2 shipped the vulnerable 3.0.11, then a newer SBOM with the patched 3.0.12.
+        ingestCycloneDx("redis:7.2", List.of(Map.of("name", "openssl", "version", "3.0.11")));
+        ingestCycloneDx("redis:7.2", List.of(Map.of("name", "openssl", "version", "3.0.12")));
+
+        // Only the latest SBOM counts, so the stale 3.0.11 row must not alert.
+        assertThat(sbomQueryService.findPreScanAlerts(50)).isEmpty();
+        assertThat(sbomQueryService.countPreScanAlerts()).isZero();
+    }
+
     private SbomIngestResponse ingestCycloneDx(String imageReference, List<Map<String, String>> components) {
         SbomIngestRequest request = new SbomIngestRequest();
         request.setImageReference(imageReference);

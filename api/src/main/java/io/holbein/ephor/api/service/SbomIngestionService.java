@@ -16,6 +16,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -48,7 +49,8 @@ public class SbomIngestionService {
         byte[] canonicalJson = serializeCanonical(request.getSbom());
         validateSize(canonicalJson);
 
-        String contentHash = computeSha256(canonicalJson);
+        // Hash a stable projection, not the raw doc: Trivy restamps serialNumber/timestamp each run and breaks dedup.
+        String contentHash = computeSha256(serializeCanonical(stableProjection(request.getFormat(), request.getSbom())));
 
         Optional<SbomDocument> existing = sbomDocumentRepository
                 .findByImageReferenceAndContentHash(request.getImageReference(), contentHash);
@@ -116,6 +118,31 @@ public class SbomIngestionService {
                 }
             }
         }
+    }
+
+    // Copy with run-specific fields stripped, used only for hashing; the full document is still stored.
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> stableProjection(String format, Map<String, Object> sbom) {
+        Map<String, Object> copy = new LinkedHashMap<>(sbom);
+        switch (format) {
+            case "cyclonedx" -> {
+                copy.remove("serialNumber");
+                if (copy.get("metadata") instanceof Map<?, ?> metadata) {
+                    Map<String, Object> metadataCopy = new LinkedHashMap<>((Map<String, Object>) metadata);
+                    metadataCopy.remove("timestamp");
+                    copy.put("metadata", metadataCopy);
+                }
+            }
+            case "spdx" -> {
+                copy.remove("documentNamespace");
+                if (copy.get("creationInfo") instanceof Map<?, ?> creationInfo) {
+                    Map<String, Object> creationInfoCopy = new LinkedHashMap<>((Map<String, Object>) creationInfo);
+                    creationInfoCopy.remove("created");
+                    copy.put("creationInfo", creationInfoCopy);
+                }
+            }
+        }
+        return copy;
     }
 
     private byte[] serializeCanonical(Map<String, Object> sbom) {

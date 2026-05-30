@@ -74,6 +74,33 @@ class SbomIngestionServiceTest extends BaseIntegrationTest {
         assertThat(sbomDocumentRepository.count()).isEqualTo(2);
     }
 
+    @Test
+    void ingest_sameContentDifferentSerialNumberAndTimestamp_deduplicates() {
+        SbomIngestRequest first = buildCycloneDxRequest("nginx:1.25", null);
+        first.setSbom(Map.of(
+                "bomFormat", "CycloneDX",
+                "specVersion", "1.5",
+                "serialNumber", "urn:uuid:11111111-1111-1111-1111-111111111111",
+                "metadata", Map.of("timestamp", "2026-05-01T00:00:00Z"),
+                "components", List.of(Map.of("name", "openssl", "version", "3.0.12", "type", "library"))
+        ));
+
+        SbomIngestRequest second = buildCycloneDxRequest("nginx:1.25", null);
+        second.setSbom(Map.of(
+                "bomFormat", "CycloneDX",
+                "specVersion", "1.5",
+                "serialNumber", "urn:uuid:22222222-2222-2222-2222-222222222222",
+                "metadata", Map.of("timestamp", "2026-05-30T12:00:00Z"),
+                "components", List.of(Map.of("name", "openssl", "version", "3.0.12", "type", "library"))
+        ));
+
+        sbomIngestionService.ingest(first);
+        SbomIngestResponse response = sbomIngestionService.ingest(second);
+
+        assertThat(response.getStatus()).isEqualTo("updated");
+        assertThat(sbomDocumentRepository.count()).isEqualTo(1);
+    }
+
     private SbomIngestRequest buildCycloneDxRequest(String imageReference, String imageDigest) {
         SbomIngestRequest request = new SbomIngestRequest();
         request.setImageReference(imageReference);

@@ -175,15 +175,21 @@ public class SbomQueryService {
 
     // --- Pre-scan alerts (CVE matching) ---
 
-    // Match on name AND exact version: name-only flags already-patched versions as vulnerable.
+    // Name + exact version (name-only flags patched versions), scoped to each image's latest SBOM.
     public List<PreScanAlert> findPreScanAlerts(int limit) {
         Query query = entityManager.createNativeQuery("""
+            WITH latest_sbom AS (
+                SELECT DISTINCT ON (image_reference) id
+                FROM sbom_documents
+                ORDER BY image_reference, last_seen DESC
+            )
             SELECT DISTINCT v.cve_id, v.severity, v.package_name, v.package_version, v.title,
                    sp.image_reference, sp.version as sbom_package_version
             FROM vulnerabilities v
             JOIN sbom_packages sp
               ON sp.name = v.package_name
              AND sp.version = v.package_version
+            JOIN latest_sbom l ON l.id = sp.sbom_id
             WHERE v.severity IN ('CRITICAL', 'HIGH')
               AND NOT EXISTS (
                 SELECT 1
@@ -214,11 +220,17 @@ public class SbomQueryService {
 
     public long countPreScanAlerts() {
         Query query = entityManager.createNativeQuery("""
+            WITH latest_sbom AS (
+                SELECT DISTINCT ON (image_reference) id
+                FROM sbom_documents
+                ORDER BY image_reference, last_seen DESC
+            )
             SELECT COUNT(DISTINCT (v.cve_id, sp.image_reference))
             FROM vulnerabilities v
             JOIN sbom_packages sp
               ON sp.name = v.package_name
              AND sp.version = v.package_version
+            JOIN latest_sbom l ON l.id = sp.sbom_id
             WHERE v.severity IN ('CRITICAL', 'HIGH')
               AND NOT EXISTS (
                 SELECT 1
