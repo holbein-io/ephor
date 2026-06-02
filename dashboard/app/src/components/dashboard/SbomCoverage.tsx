@@ -19,7 +19,9 @@ export function SbomCoverage() {
   }
 
   const { total_images, images_with_sbom, format_breakdown } = coverage;
-  const percentage = total_images > 0 ? Math.round((images_with_sbom / total_images) * 100) : 0;
+  const percentage = total_images > 0
+    ? Math.min(100, Math.round((images_with_sbom / total_images) * 100))
+    : 0;
   const hasData = images_with_sbom > 0;
 
   if (!hasData && total_images === 0) {
@@ -34,10 +36,10 @@ export function SbomCoverage() {
     <div className="flex flex-col gap-3">
       <div className="flex items-baseline justify-between">
         <div>
-          <span className="font-mono text-2xl font-bold text-text-primary">{images_with_sbom}</span>
-          <span className="font-mono text-sm text-text-tertiary ml-1">/ {total_images}</span>
+          <span className="font-mono text-3xl font-bold text-text-primary">{images_with_sbom}</span>
+          <span className="font-mono text-sm text-text-tertiary ml-1.5">/ {total_images} images</span>
         </div>
-        <span className="font-mono text-sm font-medium text-text-secondary">{percentage}%</span>
+        <span className="font-mono text-lg font-semibold text-text-secondary">{percentage}%</span>
       </div>
 
       <div className="w-full h-2 rounded-full bg-white/[0.03] overflow-hidden">

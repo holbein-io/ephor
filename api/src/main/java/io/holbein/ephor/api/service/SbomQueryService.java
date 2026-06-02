@@ -60,8 +60,12 @@ public class SbomQueryService {
     }
 
     public SbomCoverageResponse getCoverage() {
-        long totalImages = containerRepository.countDistinctImages();
+        long deployedImages = containerRepository.countDistinctImages();
         long imagesWithSbom = sbomDocumentRepository.countDistinctImageReferences();
+        long deployedWithSbom = sbomDocumentRepository.countDeployedImagesWithSbom();
+
+        // Denominator is the union of deployed and SBOM-bearing images so coverage never exceeds 100%.
+        long totalImages = deployedImages + imagesWithSbom - deployedWithSbom;
 
         Map<String, Long> formatBreakdown = new LinkedHashMap<>();
         for (Object[] row : sbomDocumentRepository.countByFormat()) {
