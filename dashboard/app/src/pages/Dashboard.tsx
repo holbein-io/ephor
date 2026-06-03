@@ -95,7 +95,7 @@ export function Dashboard() {
 
           <BentoCard
             title="Pre-Scan Alerts"
-            action={{ label: 'View all →', href: '/vulnerabilities' }}
+            action={{ label: 'View all →', href: '/inventory?tab=prescan' }}
             span={8}
           >
             <PreScanAlerts />

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { cn } from '../../utils';
 
 interface BentoCardProps {
@@ -32,12 +33,12 @@ export function BentoCard({ title, action, span = 4, className, children }: Bent
           {title}
         </span>
         {action && (
-          <a
-            href={action.href}
+          <Link
+            to={action.href}
             className="font-mono text-[11px] font-semibold text-accent hover:underline"
           >
             {action.label}
-          </a>
+          </Link>
         )}
       </div>
       <div className="px-[22px] pb-5">
