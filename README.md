@@ -6,9 +6,7 @@ Trivy and Grype find your CVEs. Then the JSON scrolls off the terminal and nobod
 
 [Website](https://holbein.io) · [Docs](https://docs.holbein.io) · [Blog](https://holbein.io/blog) · [Scanner agent](https://github.com/holbein-io/ephor-scanner)
 
-<!-- TODO: add hero screenshot/GIF once recorded, e.g.:
 ![Ephor dashboard](docs/images/dashboard.png)
--->
 
 ## Features
 
