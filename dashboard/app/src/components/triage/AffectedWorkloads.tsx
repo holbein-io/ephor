@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Package, ExternalLink, Server } from 'lucide-react';
 import { AffectedWorkload } from '../../types';
 import { Badge } from '../ui/badge';
@@ -115,8 +116,8 @@ export function AffectedWorkloads({
                   </div>
                 </div>
               </div>
-              <a
-                href={`/vulnerabilities?workload=${workload.id}`}
+              <Link
+                to={`/vulnerabilities?workload=${workload.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-bg-tertiary text-text-secondary hover:bg-bg-tertiary rounded"
@@ -124,7 +125,7 @@ export function AffectedWorkloads({
               >
                 <ExternalLink className="w-3 h-3" />
                 Details
-              </a>
+              </Link>
             </div>
           ))}
         </div>

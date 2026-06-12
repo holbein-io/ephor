@@ -89,11 +89,15 @@ export function Dashboard() {
             </BentoCard>
           )}
 
-          <BentoCard title="SBOM Coverage" span={3}>
+          <BentoCard title="SBOM Coverage" span={4}>
             <SbomCoverage />
           </BentoCard>
 
-          <BentoCard title="Pre-Scan Alerts" span={3}>
+          <BentoCard
+            title="Pre-Scan Alerts"
+            action={{ label: 'View all →', href: '/inventory?tab=prescan' }}
+            span={8}
+          >
             <PreScanAlerts />
           </BentoCard>
         </div>

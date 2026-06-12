@@ -15,7 +15,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -48,7 +51,8 @@ public class SbomIngestionService {
         byte[] canonicalJson = serializeCanonical(request.getSbom());
         validateSize(canonicalJson);
 
-        String contentHash = computeSha256(canonicalJson);
+        // Hash the package identities, not the raw doc: Trivy restamps serialNumber/timestamp/bom-ref each run.
+        String contentHash = computeSha256(serializeCanonical(stableProjection(request.getFormat(), request.getSbom())));
 
         Optional<SbomDocument> existing = sbomDocumentRepository
                 .findByImageReferenceAndContentHash(request.getImageReference(), contentHash);
@@ -113,6 +117,28 @@ public class SbomIngestionService {
                 if (!sbom.containsKey("spdxVersion")) {
                     throw ValidationException.singleField("sbom",
                             "SPDX document must contain a 'spdxVersion' field");
+                }
+            }
+        }
+    }
+
+    // Hash only the sorted package identities (name/version/purl). Trivy restamps serialNumber,
+    // timestamp and a random per-component bom-ref every run, so hashing anything else breaks dedup.
+    private Map<String, Object> stableProjection(String format, Map<String, Object> sbom) {
+        List<String> identities = new ArrayList<>();
+        switch (format) {
+            case "cyclonedx" -> collectIdentities(sbom.get("components"), "name", "version", "purl", identities);
+            case "spdx" -> collectIdentities(sbom.get("packages"), "name", "versionInfo", "downloadLocation", identities);
+        }
+        identities.sort(Comparator.naturalOrder());
+        return Map.of("identities", identities);
+    }
+
+    private void collectIdentities(Object items, String nameKey, String versionKey, String idKey, List<String> out) {
+        if (items instanceof List<?> list) {
+            for (Object item : list) {
+                if (item instanceof Map<?, ?> entry) {
+                    out.add(entry.get(nameKey) + " " + entry.get(versionKey) + " " + entry.get(idKey));
                 }
             }
         }

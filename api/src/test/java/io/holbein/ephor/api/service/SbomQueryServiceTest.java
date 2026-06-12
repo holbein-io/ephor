@@ -73,6 +73,45 @@ class SbomQueryServiceTest extends BaseIntegrationTest {
     }
 
     @Test
+    void getCoverage_countsStaleSbomsAgainstUnionOfImages() {
+        // One deployed image with an SBOM, plus two SBOMs for images that are no longer deployed.
+        ingestDeployedImage("nginx", "1.25");
+        ingestCycloneDx("nginx:1.25", List.of(Map.of("name", "openssl", "version", "3.0.12")));
+        ingestCycloneDx("redis:7.2", List.of(Map.of("name", "libc", "version", "2.36")));
+        ingestCycloneDx("postgres:16", List.of(Map.of("name", "zlib", "version", "1.3")));
+
+        SbomCoverageResponse coverage = sbomQueryService.getCoverage();
+
+        // Denominator is the union of deployed and sbom-bearing images, so it never undershoots
+        // the numerator: 3/3 rather than the old 3/1 that rendered as 300% coverage.
+        assertThat(coverage.getImagesWithSbom()).isEqualTo(3);
+        assertThat(coverage.getTotalImages()).isEqualTo(3);
+    }
+
+    private void ingestDeployedImage(String imageName, String imageTag) {
+        ScanIngestRequest scanRequest = new ScanIngestRequest();
+        scanRequest.setNamespace("ns1");
+        scanRequest.setScanLabel("scan-" + imageName);
+        scanRequest.setStatus(ScanStatus.completed);
+        scanRequest.setStartedAt(Instant.now());
+
+        WorkloadData workload = new WorkloadData();
+        workload.setNamespace("ns1");
+        workload.setName(imageName + "-app");
+        workload.setKind(Workload.WorkloadKind.Deployment);
+
+        ContainerData container = new ContainerData();
+        container.setName(imageName);
+        container.setImageName(imageName);
+        container.setImageTag(imageTag);
+        container.setVulnerabilities(List.of());
+
+        workload.setContainers(List.of(container));
+        scanRequest.setWorkloads(List.of(workload));
+        scanIngestionService.ingestScan(scanRequest);
+    }
+
+    @Test
     void diff_detectsAddedRemovedAndChangedPackages() {
         SbomIngestResponse v1 = ingestCycloneDx("nginx:1.25", List.of(
                 Map.of("name", "openssl", "version", "3.0.11"),
@@ -151,6 +190,97 @@ class SbomQueryServiceTest extends BaseIntegrationTest {
         assertThat(alerts.get(0).getImageReference()).isEqualTo("redis:7.2");
         assertThat(alerts.get(0).getPackageName()).isEqualTo("openssl");
         assertThat(sbomQueryService.countPreScanAlerts()).isEqualTo(1);
+    }
+
+    @Test
+    void findPreScanAlerts_ignoresImageRunningPatchedVersionOfSamePackage() {
+        // A CVE is known for openssl 3.0.11 (found while scanning another image)...
+        ScanIngestRequest scanRequest = new ScanIngestRequest();
+        scanRequest.setNamespace("ns1");
+        scanRequest.setScanLabel("scan-1");
+        scanRequest.setStatus(ScanStatus.completed);
+        scanRequest.setStartedAt(Instant.now());
+
+        WorkloadData workload = new WorkloadData();
+        workload.setNamespace("ns1");
+        workload.setName("web-app");
+        workload.setKind(Workload.WorkloadKind.Deployment);
+
+        ContainerData container = new ContainerData();
+        container.setName("nginx");
+        container.setImageName("nginx");
+        container.setImageTag("1.25");
+
+        VulnerabilityData vuln = new VulnerabilityData();
+        vuln.setCveId("CVE-2025-0001");
+        vuln.setPackageName("openssl");
+        vuln.setPackageVersion("3.0.11");
+        vuln.setSeverity(SeverityLevel.CRITICAL);
+        vuln.setScannerType("trivy");
+        vuln.setTitle("OpenSSL buffer overflow");
+
+        container.setVulnerabilities(List.of(vuln));
+        workload.setContainers(List.of(container));
+        scanRequest.setWorkloads(List.of(workload));
+        scanIngestionService.ingestScan(scanRequest);
+
+        // ...but redis:7.2 ships the PATCHED openssl 3.0.12, so it must NOT be flagged.
+        SbomIngestRequest sbomRequest = new SbomIngestRequest();
+        sbomRequest.setImageReference("redis:7.2");
+        sbomRequest.setScanGroupId(UUID.randomUUID());
+        sbomRequest.setFormat("cyclonedx");
+        sbomRequest.setSbom(Map.of(
+                "bomFormat", "CycloneDX",
+                "specVersion", "1.5",
+                "components", List.of(
+                        Map.of("name", "openssl", "version", "3.0.12", "purl", "pkg:debian/openssl@3.0.12")
+                )
+        ));
+        sbomIngestionService.ingest(sbomRequest);
+
+        assertThat(sbomQueryService.findPreScanAlerts(50)).isEmpty();
+        assertThat(sbomQueryService.countPreScanAlerts()).isZero();
+    }
+
+    @Test
+    void findPreScanAlerts_usesLatestSbomNotStaleVulnerableVersion() {
+        // Known CVE for openssl 3.0.11, found while scanning another image.
+        ScanIngestRequest scanRequest = new ScanIngestRequest();
+        scanRequest.setNamespace("ns1");
+        scanRequest.setScanLabel("scan-1");
+        scanRequest.setStatus(ScanStatus.completed);
+        scanRequest.setStartedAt(Instant.now());
+
+        WorkloadData workload = new WorkloadData();
+        workload.setNamespace("ns1");
+        workload.setName("web-app");
+        workload.setKind(Workload.WorkloadKind.Deployment);
+
+        ContainerData container = new ContainerData();
+        container.setName("nginx");
+        container.setImageName("nginx");
+        container.setImageTag("1.25");
+
+        VulnerabilityData vuln = new VulnerabilityData();
+        vuln.setCveId("CVE-2025-0001");
+        vuln.setPackageName("openssl");
+        vuln.setPackageVersion("3.0.11");
+        vuln.setSeverity(SeverityLevel.CRITICAL);
+        vuln.setScannerType("trivy");
+        vuln.setTitle("OpenSSL buffer overflow");
+
+        container.setVulnerabilities(List.of(vuln));
+        workload.setContainers(List.of(container));
+        scanRequest.setWorkloads(List.of(workload));
+        scanIngestionService.ingestScan(scanRequest);
+
+        // redis:7.2 shipped the vulnerable 3.0.11, then a newer SBOM with the patched 3.0.12.
+        ingestCycloneDx("redis:7.2", List.of(Map.of("name", "openssl", "version", "3.0.11")));
+        ingestCycloneDx("redis:7.2", List.of(Map.of("name", "openssl", "version", "3.0.12")));
+
+        // Only the latest SBOM counts, so the stale 3.0.11 row must not alert.
+        assertThat(sbomQueryService.findPreScanAlerts(50)).isEmpty();
+        assertThat(sbomQueryService.countPreScanAlerts()).isZero();
     }
 
     private SbomIngestResponse ingestCycloneDx(String imageReference, List<Map<String, String>> components) {

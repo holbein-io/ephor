@@ -1,22 +1,29 @@
 import { useState, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Package, ArrowUpDown } from 'lucide-react';
 import { PackageSearchResult, TopPackageEntry } from '../types';
 import { sbomService } from '../services/api';
 import { LicenseAudit } from '../components/sbom/LicenseAudit';
 import { SbomExplorer } from '../components/sbom/SbomExplorer';
+import { PreScanAlertsList } from '../components/sbom/PreScanAlertsList';
 import { cn } from '../utils';
 
-type Tab = 'packages' | 'licenses' | 'sboms';
+type Tab = 'packages' | 'licenses' | 'sboms' | 'prescan';
 
 const tabs: { key: Tab; label: string }[] = [
   { key: 'packages', label: 'Packages' },
   { key: 'licenses', label: 'Licenses' },
   { key: 'sboms', label: 'SBOMs' },
+  { key: 'prescan', label: 'Pre-Scan Alerts' },
 ];
 
 export function Inventory() {
-  const [activeTab, setActiveTab] = useState<Tab>('packages');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') as Tab | null;
+  const activeTab: Tab = tabs.some(t => t.key === tabParam) ? tabParam! : 'packages';
+
+  const setActiveTab = (key: Tab) => setSearchParams(key === 'packages' ? {} : { tab: key });
 
   return (
     <div className="space-y-3 max-w-[1400px] mx-auto">
@@ -46,6 +53,7 @@ export function Inventory() {
       {activeTab === 'packages' && <PackageSearch />}
       {activeTab === 'licenses' && <LicenseAudit />}
       {activeTab === 'sboms' && <SbomExplorer />}
+      {activeTab === 'prescan' && <PreScanAlertsList />}
     </div>
   );
 }

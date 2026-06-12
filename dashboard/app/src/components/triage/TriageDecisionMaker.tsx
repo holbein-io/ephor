@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { CheckCircle, X, AlertTriangle, Shield, MessageSquare, User, Calendar, ExternalLink, FileText } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
@@ -220,15 +221,15 @@ export function TriageDecisionMaker({
               {/* Portal Links */}
               <div className="flex flex-wrap gap-2 pt-2 border-t">
                 <span className="text-xs font-medium text-text-secondary self-center">Links:</span>
-                <a
-                  href={`/vulnerabilities/${currentPrep.vulnerability_id}`}
+                <Link
+                  to={`/vulnerabilities/${currentPrep.vulnerability_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/15 rounded border border-indigo-500/30 font-medium"
                 >
                   <FileText className="w-3 h-3" />
                   View Details
-                </a>
+                </Link>
                 {(currentPrep as any).primary_url && (
                   <a
                     href={(currentPrep as any).primary_url}
