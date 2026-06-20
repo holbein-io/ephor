@@ -74,7 +74,7 @@ export function Vulnerabilities() {
           </h1>
           {totalCount !== undefined && (
             <p className="text-[13px] text-text-secondary mt-1">
-              {totalCount.toLocaleString()} findings across active workloads
+              {totalCount.toLocaleString()} vulnerabilities tracked
             </p>
           )}
         </div>

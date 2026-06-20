@@ -50,7 +50,7 @@ public class SbomPackageController {
     }
 
     @GetMapping("/licenses/search")
-    public Page<PackageSearchResult> searchByLicense(
+    public Page<SbomPackageResponses.TopPackage> searchByLicense(
             @RequestParam("license") String license,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "25") int size) {

@@ -44,8 +44,11 @@ export function SeverityHeatmap({ maxNamespaces = 6 }: SeverityHeatmapProps) {
   const { processedData, maxValues } = useMemo(() => {
     if (!data) return { processedData: [], maxValues: {} as Record<SeverityLevel, number> };
 
+    const activeTotal = (ns: typeof data[number]) =>
+      ns.critical + ns.high + ns.medium + ns.low;
+
     const sorted = [...data]
-      .sort((a, b) => b.total_vulnerabilities - a.total_vulnerabilities)
+      .sort((a, b) => activeTotal(b) - activeTotal(a))
       .slice(0, maxNamespaces);
 
     const maxVals = SEVERITY_LEVELS.reduce((acc, severity) => {

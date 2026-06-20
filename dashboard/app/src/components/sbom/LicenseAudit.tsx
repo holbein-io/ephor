@@ -158,15 +158,15 @@ export function LicenseAudit() {
               <tr className="border-b border-border">
                 <th className="px-5 py-2.5 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Package</th>
                 <th className="px-5 py-2.5 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Version</th>
-                <th className="px-5 py-2.5 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Image</th>
+                <th className="px-5 py-2.5 text-right text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Images</th>
               </tr>
             </thead>
             <tbody>
               {licensePackages.content.map((pkg, i) => (
-                <tr key={`${pkg.name}-${i}`} className="border-b border-border/50 last:border-b-0">
+                <tr key={`${pkg.name}-${pkg.version}-${i}`} className="border-b border-border/50 last:border-b-0">
                   <td className="px-5 py-2.5 font-mono text-[12px] text-text-primary">{pkg.name}</td>
                   <td className="px-5 py-2.5 font-mono text-[12px] text-text-secondary">{pkg.version}</td>
-                  <td className="px-5 py-2.5 font-mono text-[11px] text-text-tertiary">{pkg.image_reference}</td>
+                  <td className="px-5 py-2.5 text-right font-mono text-[12px] text-text-secondary">{pkg.image_count}</td>
                 </tr>
               ))}
             </tbody>

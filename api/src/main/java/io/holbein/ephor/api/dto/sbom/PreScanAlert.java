@@ -12,5 +12,4 @@ public class PreScanAlert {
     private String packageVersion;
     private String title;
     private String imageReference;
-    private String sbomPackageVersion;
 }

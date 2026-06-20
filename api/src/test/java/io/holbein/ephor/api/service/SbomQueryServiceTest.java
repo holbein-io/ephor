@@ -62,18 +62,22 @@ class SbomQueryServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void getCoverage_returnsCorrectCounts() {
+    void getCoverage_measuresDeployedImagesWithSbom() {
+        // Two deployed images; only one has an SBOM ingested.
+        ingestDeployedImage("nginx", "1.25");
+        ingestDeployedImage("redis", "7.2");
         ingestCycloneDx("nginx:1.25", List.of(Map.of("name", "openssl", "version", "3.0.12")));
-        ingestCycloneDx("redis:7.2", List.of(Map.of("name", "libc", "version", "2.36")));
 
         SbomCoverageResponse coverage = sbomQueryService.getCoverage();
 
-        assertThat(coverage.getImagesWithSbom()).isEqualTo(2);
-        assertThat(coverage.getFormatBreakdown()).containsEntry("cyclonedx", 2L);
+        // Denominator is the deployed fleet (2), numerator is deployed images that have an SBOM (1).
+        assertThat(coverage.getTotalImages()).isEqualTo(2);
+        assertThat(coverage.getImagesWithSbom()).isEqualTo(1);
+        assertThat(coverage.getFormatBreakdown()).containsEntry("cyclonedx", 1L);
     }
 
     @Test
-    void getCoverage_countsStaleSbomsAgainstUnionOfImages() {
+    void getCoverage_ignoresStaleSbomsForUndeployedImages() {
         // One deployed image with an SBOM, plus two SBOMs for images that are no longer deployed.
         ingestDeployedImage("nginx", "1.25");
         ingestCycloneDx("nginx:1.25", List.of(Map.of("name", "openssl", "version", "3.0.12")));
@@ -82,10 +86,9 @@ class SbomQueryServiceTest extends BaseIntegrationTest {
 
         SbomCoverageResponse coverage = sbomQueryService.getCoverage();
 
-        // Denominator is the union of deployed and sbom-bearing images, so it never undershoots
-        // the numerator: 3/3 rather than the old 3/1 that rendered as 300% coverage.
-        assertThat(coverage.getImagesWithSbom()).isEqualTo(3);
-        assertThat(coverage.getTotalImages()).isEqualTo(3);
+        // Stale SBOMs for undeployed images are not counted: deployed coverage is 1/1.
+        assertThat(coverage.getTotalImages()).isEqualTo(1);
+        assertThat(coverage.getImagesWithSbom()).isEqualTo(1);
     }
 
     private void ingestDeployedImage(String imageName, String imageTag) {
@@ -281,6 +284,45 @@ class SbomQueryServiceTest extends BaseIntegrationTest {
         // Only the latest SBOM counts, so the stale 3.0.11 row must not alert.
         assertThat(sbomQueryService.findPreScanAlerts(50)).isEmpty();
         assertThat(sbomQueryService.countPreScanAlerts()).isZero();
+    }
+
+    @Test
+    void getLicenseDistribution_countsDistinctPackagesNotOccurrences() {
+        // The same package (openssl 3.0.11, MIT) appears in three different images.
+        ingestLicensed("nginx:1.25", List.of(licensedComponent("openssl", "3.0.11", "pkg:deb/openssl@3.0.11", "MIT")));
+        ingestLicensed("redis:7.2", List.of(licensedComponent("openssl", "3.0.11", "pkg:deb/openssl@3.0.11", "MIT")));
+        ingestLicensed("postgres:16", List.of(licensedComponent("openssl", "3.0.11", "pkg:deb/openssl@3.0.11", "MIT")));
+
+        SbomPackageResponses.LicenseDistribution mit = sbomQueryService.getLicenseDistribution().stream()
+                .filter(d -> "MIT".equals(d.getLicense()))
+                .findFirst()
+                .orElseThrow();
+
+        // One distinct package, present in three images - not three "occurrences".
+        assertThat(mit.getPackageCount()).isEqualTo(1);
+        assertThat(mit.getImageCount()).isEqualTo(3);
+    }
+
+    private Map<String, Object> licensedComponent(String name, String version, String purl, String license) {
+        return Map.of(
+                "name", name,
+                "version", version,
+                "purl", purl,
+                "licenses", List.of(Map.of("license", Map.of("id", license)))
+        );
+    }
+
+    private SbomIngestResponse ingestLicensed(String imageReference, List<Map<String, Object>> components) {
+        SbomIngestRequest request = new SbomIngestRequest();
+        request.setImageReference(imageReference);
+        request.setScanGroupId(UUID.randomUUID());
+        request.setFormat("cyclonedx");
+        request.setSbom(Map.of(
+                "bomFormat", "CycloneDX",
+                "specVersion", "1.5",
+                "components", components
+        ));
+        return sbomIngestionService.ingest(request);
     }
 
     private SbomIngestResponse ingestCycloneDx(String imageReference, List<Map<String, String>> components) {

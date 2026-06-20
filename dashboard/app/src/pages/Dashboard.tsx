@@ -34,7 +34,7 @@ export function Dashboard() {
 
   const statusItems = [
     { label: 'Open', value: metrics.by_status.open, color: 'var(--color-severity-critical)' },
-    { label: 'In Progress', value: metrics.active_escalations, color: 'var(--color-accent-cool)' },
+    { label: 'In Progress', value: metrics.by_status.triaged, color: 'var(--color-accent-cool)' },
     { label: 'Resolved', value: metrics.by_status.resolved, color: 'var(--color-accent-mint)' },
     { label: 'Accepted', value: metrics.by_status.accepted_risk, color: 'var(--color-text-tertiary)' },
   ];
@@ -47,7 +47,7 @@ export function Dashboard() {
         <div className="grid grid-cols-12 gap-4">
           <SeverityMegaStrip
             severity={metrics.by_severity}
-            total={metrics.total_vulnerabilities}
+            total={metrics.total_active_vulnerabilities}
           />
 
           <BentoCard title="Status Overview" span={3}>

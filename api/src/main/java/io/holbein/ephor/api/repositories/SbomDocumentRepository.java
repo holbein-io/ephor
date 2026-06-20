@@ -26,9 +26,6 @@ public interface SbomDocumentRepository extends JpaRepository<SbomDocument, UUID
     @Query("SELECT DISTINCT s.imageReference FROM SbomDocument s ORDER BY s.imageReference")
     List<String> findAllDistinctImageReferences();
 
-    @Query("SELECT COUNT(DISTINCT s.imageReference) FROM SbomDocument s")
-    long countDistinctImageReferences();
-
     @Query("SELECT COUNT(DISTINCT s.imageReference) FROM SbomDocument s " +
             "WHERE s.imageReference IN " +
             "(SELECT CONCAT(c.imageName, ':', c.imageTag) FROM Container c WHERE c.imageName IS NOT NULL)")

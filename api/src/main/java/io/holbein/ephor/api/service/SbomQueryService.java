@@ -60,12 +60,10 @@ public class SbomQueryService {
     }
 
     public SbomCoverageResponse getCoverage() {
+        // Coverage = share of deployed images with an SBOM; stale SBOMs for
+        // undeployed images are ignored so the ratio reflects the live fleet.
         long deployedImages = containerRepository.countDistinctImages();
-        long imagesWithSbom = sbomDocumentRepository.countDistinctImageReferences();
         long deployedWithSbom = sbomDocumentRepository.countDeployedImagesWithSbom();
-
-        // Denominator is the union of deployed and SBOM-bearing images so coverage never exceeds 100%.
-        long totalImages = deployedImages + imagesWithSbom - deployedWithSbom;
 
         Map<String, Long> formatBreakdown = new LinkedHashMap<>();
         for (Object[] row : sbomDocumentRepository.countByFormat()) {
@@ -73,8 +71,8 @@ public class SbomQueryService {
         }
 
         return SbomCoverageResponse.builder()
-                .totalImages(totalImages)
-                .imagesWithSbom(imagesWithSbom)
+                .totalImages(deployedImages)
+                .imagesWithSbom(deployedWithSbom)
                 .formatBreakdown(formatBreakdown)
                 .build();
     }
@@ -102,13 +100,7 @@ public class SbomQueryService {
     }
 
     public Page<SbomPackageResponses.TopPackage> getTopPackages(Pageable pageable) {
-        return sbomPackageRepository.findTopPackages(pageable)
-                .map(row -> SbomPackageResponses.TopPackage.builder()
-                        .name((String) row[0])
-                        .version((String) row[1])
-                        .type((String) row[2])
-                        .imageCount((Long) row[3])
-                        .build());
+        return sbomPackageRepository.findTopPackages(pageable).map(this::toTopPackage);
     }
 
     public List<SbomPackageResponses.LicenseDistribution> getLicenseDistribution() {
@@ -121,9 +113,9 @@ public class SbomQueryService {
                 .toList();
     }
 
-    public Page<PackageSearchResult> findByLicense(String license, Pageable pageable) {
-        return sbomPackageRepository.findByLicense(license, pageable)
-                .map(this::toSearchResult);
+    // Distinct packages with image spread, matching the license distribution counts.
+    public Page<SbomPackageResponses.TopPackage> findByLicense(String license, Pageable pageable) {
+        return sbomPackageRepository.findByLicense(license, pageable).map(this::toTopPackage);
     }
 
     // --- Diff ---
@@ -136,8 +128,8 @@ public class SbomQueryService {
                 .orElseThrow(() -> new ResourceNotFoundException(ProblemType.RESOURCE_NOT_FOUND,
                         "SBOM document not found: " + sbomIdB));
 
-        Map<String, SbomPackage> packagesA = indexByName(sbomPackageRepository.findBySbomDocumentId(sbomIdA));
-        Map<String, SbomPackage> packagesB = indexByName(sbomPackageRepository.findBySbomDocumentId(sbomIdB));
+        Map<String, SbomPackage> packagesA = indexByIdentity(sbomPackageRepository.findBySbomDocumentId(sbomIdA));
+        Map<String, SbomPackage> packagesB = indexByIdentity(sbomPackageRepository.findBySbomDocumentId(sbomIdB));
 
         List<SbomDiffResult.PackageEntry> added = new ArrayList<>();
         List<SbomDiffResult.PackageEntry> removed = new ArrayList<>();
@@ -188,7 +180,7 @@ public class SbomQueryService {
                 ORDER BY image_reference, last_seen DESC
             )
             SELECT DISTINCT v.cve_id, v.severity, v.package_name, v.package_version, v.title,
-                   sp.image_reference, sp.version as sbom_package_version
+                   sp.image_reference
             FROM vulnerabilities v
             JOIN sbom_packages sp
               ON sp.name = v.package_name
@@ -217,7 +209,6 @@ public class SbomQueryService {
                         .packageVersion((String) row[3])
                         .title((String) row[4])
                         .imageReference((String) row[5])
-                        .sbomPackageVersion((String) row[6])
                         .build())
                 .toList();
     }
@@ -229,20 +220,23 @@ public class SbomQueryService {
                 FROM sbom_documents
                 ORDER BY image_reference, last_seen DESC
             )
-            SELECT COUNT(DISTINCT (v.cve_id, sp.image_reference))
-            FROM vulnerabilities v
-            JOIN sbom_packages sp
-              ON sp.name = v.package_name
-             AND sp.version = v.package_version
-            JOIN latest_sbom l ON l.id = sp.sbom_id
-            WHERE v.severity IN ('CRITICAL', 'HIGH')
-              AND NOT EXISTS (
-                SELECT 1
-                FROM vulnerability_instances vi
-                JOIN containers c ON c.id = vi.container_id
-                WHERE vi.vulnerability_id = v.id
-                  AND CONCAT(c.image_name, ':', c.image_tag) = sp.image_reference
-              )
+            SELECT COUNT(*) FROM (
+                SELECT DISTINCT v.cve_id, v.severity, v.package_name, v.package_version, v.title,
+                       sp.image_reference
+                FROM vulnerabilities v
+                JOIN sbom_packages sp
+                  ON sp.name = v.package_name
+                 AND sp.version = v.package_version
+                JOIN latest_sbom l ON l.id = sp.sbom_id
+                WHERE v.severity IN ('CRITICAL', 'HIGH')
+                  AND NOT EXISTS (
+                    SELECT 1
+                    FROM vulnerability_instances vi
+                    JOIN containers c ON c.id = vi.container_id
+                    WHERE vi.vulnerability_id = v.id
+                      AND CONCAT(c.image_name, ':', c.image_tag) = sp.image_reference
+                  )
+            ) alerts
             """);
         return ((Number) query.getSingleResult()).longValue();
     }
@@ -291,6 +285,15 @@ public class SbomQueryService {
                 .build();
     }
 
+    private SbomPackageResponses.TopPackage toTopPackage(Object[] row) {
+        return SbomPackageResponses.TopPackage.builder()
+                .name((String) row[0])
+                .version((String) row[1])
+                .type((String) row[2])
+                .imageCount((Long) row[3])
+                .build();
+    }
+
     private PackageSearchResult toSearchResult(SbomPackage pkg) {
         return PackageSearchResult.builder()
                 .name(pkg.getName())
@@ -302,10 +305,11 @@ public class SbomQueryService {
                 .build();
     }
 
-    private Map<String, SbomPackage> indexByName(List<SbomPackage> packages) {
+    // Key on name + type so same-named packages of different types aren't collapsed.
+    private Map<String, SbomPackage> indexByIdentity(List<SbomPackage> packages) {
         Map<String, SbomPackage> index = new LinkedHashMap<>();
         for (SbomPackage pkg : packages) {
-            index.put(pkg.getName(), pkg);
+            index.put(pkg.getName() + " " + (pkg.getType() == null ? "" : pkg.getType()), pkg);
         }
         return index;
     }

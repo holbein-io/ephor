@@ -38,7 +38,7 @@ export const sbomService = {
     return apiClient.get('/sbom/packages/licenses');
   },
 
-  async searchByLicense(license: string, page = 0, size = 25): Promise<PageResponse<PackageSearchResult>> {
+  async searchByLicense(license: string, page = 0, size = 25): Promise<PageResponse<TopPackageEntry>> {
     return apiClient.get('/sbom/packages/licenses/search', { license, page, size });
   },
 

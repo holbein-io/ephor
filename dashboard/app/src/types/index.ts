@@ -83,7 +83,7 @@ export interface PaginatedResponse<T> {
 
 export interface DashboardMetrics {
   total_vulnerabilities: number;
-  total_active_vulnerabilities?: number;
+  total_active_vulnerabilities: number;
   by_severity: {
     CRITICAL: number;
     HIGH: number;
@@ -96,6 +96,7 @@ export interface DashboardMetrics {
     resolved: number;
     false_positive: number;
     accepted_risk: number;
+    triaged: number;
   };
   active_escalations: number;
 }
@@ -399,16 +400,12 @@ export interface PreScanAlert {
   package_version: string;
   title: string;
   image_reference: string;
-  sbom_package_version: string;
 }
 
 export interface NamespaceComparison {
   namespace: string;
-  total_vulnerabilities: number;
   critical: number;
   high: number;
   medium: number;
   low: number;
-  open: number;
-  resolved: number;
 }

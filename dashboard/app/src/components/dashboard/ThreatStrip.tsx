@@ -6,7 +6,7 @@ interface ThreatStripProps {
 }
 
 export function ThreatStrip({ metrics }: ThreatStripProps) {
-  const { by_severity: sev, by_status: status, total_vulnerabilities: total } = metrics;
+  const { by_severity: sev, by_status: status, total_active_vulnerabilities: total } = metrics;
   const sum = sev.CRITICAL + sev.HIGH + sev.MEDIUM + sev.LOW || 1;
 
   const critPct = (sev.CRITICAL / sum) * 100;
@@ -45,7 +45,7 @@ export function ThreatStrip({ metrics }: ThreatStripProps) {
               {total.toLocaleString()}
             </span>
             <span className="text-[7px] font-bold tracking-[0.1em] uppercase text-text-tertiary mt-px">
-              Total
+              Active
             </span>
           </div>
         </div>

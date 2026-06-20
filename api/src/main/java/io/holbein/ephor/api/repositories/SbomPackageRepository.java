@@ -40,14 +40,22 @@ public interface SbomPackageRepository extends JpaRepository<SbomPackage, UUID> 
     List<SbomPackage> findBySbomDocumentId(UUID sbomId);
 
     @Query("""
-        SELECT sp.license, COUNT(sp.id), COUNT(DISTINCT sp.imageReference)
+        SELECT sp.license,
+               COUNT(DISTINCT CONCAT(sp.name, '@', sp.version, '@', COALESCE(sp.type, ''))),
+               COUNT(DISTINCT sp.imageReference)
         FROM SbomPackage sp
         WHERE sp.license IS NOT NULL
         GROUP BY sp.license
-        ORDER BY COUNT(sp.id) DESC
+        ORDER BY COUNT(DISTINCT CONCAT(sp.name, '@', sp.version, '@', COALESCE(sp.type, ''))) DESC
         """)
     List<Object[]> getLicenseDistribution();
 
-    @Query("SELECT sp FROM SbomPackage sp WHERE sp.license = :license")
-    Page<SbomPackage> findByLicense(@Param("license") String license, Pageable pageable);
+    @Query("""
+        SELECT sp.name, sp.version, sp.type, COUNT(DISTINCT sp.imageReference)
+        FROM SbomPackage sp
+        WHERE sp.license = :license
+        GROUP BY sp.name, sp.version, sp.type
+        ORDER BY COUNT(DISTINCT sp.imageReference) DESC
+        """)
+    Page<Object[]> findByLicense(@Param("license") String license, Pageable pageable);
 }

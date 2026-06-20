@@ -30,13 +30,15 @@ public class DashboardService {
                 VulnerabilityInstance.InstanceStatus.triaged
         );
 
-        long totalVulnerabilities = instanceRepository.count();
+        // Derive total and active from one status map so they always reconcile
+        // with the per-status breakdown returned to the client.
+        Map<String, Long> byStatus = buildStatusMap();
+        long totalVulnerabilities = byStatus.values().stream().mapToLong(Long::longValue).sum();
         long totalActive = activeStatuses.stream()
-                .mapToLong(instanceRepository::countByStatus)
+                .mapToLong(status -> byStatus.getOrDefault(status.name(), 0L))
                 .sum();
 
         Map<String, Long> bySeverity = buildSeverityMap(activeStatuses);
-        Map<String, Long> byStatus = buildStatusMap();
 
         long activeEscalations = escalationRepository.countByStatusIn(
                 List.of(EscalationStatus.pending, EscalationStatus.acknowledged));
@@ -74,10 +76,7 @@ public class DashboardService {
                     ((Number) row[1]).longValue(),
                     ((Number) row[2]).longValue(),
                     ((Number) row[3]).longValue(),
-                    ((Number) row[4]).longValue(),
-                    ((Number) row[5]).longValue(),
-                    ((Number) row[6]).longValue(),
-                    ((Number) row[7]).longValue()
+                    ((Number) row[4]).longValue()
             ));
         }
         return result;
@@ -103,10 +102,9 @@ public class DashboardService {
 
     private Map<String, Long> buildStatusMap() {
         Map<String, Long> map = new LinkedHashMap<>();
-        map.put("open", instanceRepository.countByStatus(VulnerabilityInstance.InstanceStatus.open));
-        map.put("resolved", instanceRepository.countByStatus(VulnerabilityInstance.InstanceStatus.resolved));
-        map.put("false_positive", instanceRepository.countByStatus(VulnerabilityInstance.InstanceStatus.false_positive));
-        map.put("accepted_risk", instanceRepository.countByStatus(VulnerabilityInstance.InstanceStatus.accepted_risk));
+        for (VulnerabilityInstance.InstanceStatus status : VulnerabilityInstance.InstanceStatus.values()) {
+            map.put(status.name(), instanceRepository.countByStatus(status));
+        }
         return map;
     }
 }

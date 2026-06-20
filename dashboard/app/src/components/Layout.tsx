@@ -45,9 +45,6 @@ export function Layout({ children }: LayoutProps) {
         {/* Brand */}
         <Link to="/" className="flex items-baseline gap-2 mr-10 no-underline">
           <span className="font-display text-xl italic text-text-primary">Ephor</span>
-          <span className="font-mono text-[10px] text-text-tertiary bg-bg-tertiary border border-border-subtle px-1.5 py-0.5 rounded">
-            v2.4
-          </span>
         </Link>
 
         {/* Nav Links */}
