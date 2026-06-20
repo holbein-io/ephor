@@ -39,7 +39,6 @@ export function TriageDecisionMaker({
   const [targetDateError, setTargetDateError] = useState('');
   const [priority, setPriority] = useState<string>('medium');
   const [decidedVulns, setDecidedVulns] = useState<Set<number>>(new Set());
-  const [applyToAll, setApplyToAll] = useState(true);
   const [decidedWorkloadsCount, setDecidedWorkloadsCount] = useState(0);
 
   // Fetch existing decisions to initialize decidedVulns
@@ -50,7 +49,7 @@ export function TriageDecisionMaker({
     if (!preparations) return 0;
     return preparations.reduce((total, prep) => {
       const workloads = (prep as any).affected_workloads || [];
-      return total + Math.max(workloads.length, 1); // At least 1 if no workloads data
+      return total + workloads.length;
     }, 0);
   }, [preparations]);
 
@@ -66,7 +65,7 @@ export function TriageDecisionMaker({
         preparations.forEach(prep => {
           if (decidedIds.has(prep.vulnerability_id)) {
             const workloads = (prep as any).affected_workloads || [];
-            count += Math.max(workloads.length, 1);
+            count += workloads.length;
           }
         });
         setDecidedWorkloadsCount(count);
@@ -102,15 +101,13 @@ export function TriageDecisionMaker({
 
     // Count workloads for this decision
     const workloads = (currentPrep as any).affected_workloads || [];
-    const workloadsForThisDecision = Math.max(workloads.length, 1);
-    setDecidedWorkloadsCount(prev => prev + workloadsForThisDecision);
+    setDecidedWorkloadsCount(prev => prev + workloads.length);
 
     // Reset form
     setDecisionNotes('');
     setAssignedTo('');
     setTargetDate('');
     setPriority('medium');
-    setApplyToAll(true);
 
     // Keep index at 0 since the array will shrink after filtering
     // The next pending item will automatically appear at index 0
@@ -298,8 +295,6 @@ export function TriageDecisionMaker({
               packageName={(currentPrep as any).package_name || ''}
               packageVersion={(currentPrep as any).package_version}
               fixedVersion={(currentPrep as any).fixed_version}
-              applyToAll={applyToAll}
-              onApplyToAllChange={setApplyToAll}
             />
 
             {/* Decision Form */}

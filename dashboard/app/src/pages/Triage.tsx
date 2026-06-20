@@ -172,7 +172,7 @@ export function Triage() {
             <TriageWorkflowStepper
               currentStatus={state.currentSession.status}
               preparationsCount={prepCount}
-              decisionsCount={state.currentSession.decisions_count || 0}
+              decisionsCount={decCount}
             />
 
             {/* Stats Row */}

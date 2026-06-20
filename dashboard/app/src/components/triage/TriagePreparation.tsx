@@ -125,7 +125,7 @@ export function TriagePreparation({
 
   const handleAddWithNotes = (vuln: Vulnerability) => {
     if (!isVulnerabilityAdded(vuln.id!)) {
-      onAddToSession(vuln, 'medium', notesText);
+      onAddToSession(vuln, undefined, notesText);
     }
     setNotesInputVulnId(null);
     setNotesText('');

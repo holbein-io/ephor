@@ -9,17 +9,13 @@ interface AffectedWorkloadsProps {
   packageName: string;
   packageVersion?: string;
   fixedVersion?: string;
-  applyToAll: boolean;
-  onApplyToAllChange: (value: boolean) => void;
 }
 
 export function AffectedWorkloads({
   workloads,
   packageName,
   packageVersion,
-  fixedVersion,
-  applyToAll,
-  onApplyToAllChange
+  fixedVersion
 }: AffectedWorkloadsProps) {
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -45,18 +41,9 @@ export function AffectedWorkloads({
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <label
-            className="flex items-center gap-2 text-sm"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <input
-              type="checkbox"
-              checked={applyToAll}
-              onChange={(e) => onApplyToAllChange(e.target.checked)}
-              className="rounded border-border text-accent focus:ring-accent"
-            />
-            <span className="text-text-secondary">Apply to all</span>
-          </label>
+          <span className="text-xs text-text-tertiary">
+            Decision applies to all instances
+          </span>
           {isExpanded ? (
             <ChevronUp className="w-4 h-4 text-text-tertiary" />
           ) : (
@@ -70,7 +57,7 @@ export function AffectedWorkloads({
         <div className="divide-y divide-gray-100">
           {workloads.map((workload) => (
             <div
-              key={workload.instance_id}
+              key={workload.id}
               className="px-3 py-2 hover:bg-bg-tertiary flex items-center justify-between"
             >
               <div className="flex items-center gap-3">

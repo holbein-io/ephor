@@ -330,7 +330,8 @@ public class TriageService {
                     (String) row[2],
                     (String) row[3],
                     (String) row[4],
-                    (String) row[5]
+                    (String) row[5],
+                    Map.of()
             );
             result.computeIfAbsent(vulnId, k -> new ArrayList<>()).add(ws);
         }
@@ -376,11 +377,7 @@ public class TriageService {
             triageDecisionRepository.save(decision);
         }
 
-        // Update open vulnerability instances to triaged status
-        vulnerabilityInstanceRepository.updateStatusByVulnerabilityIdAndCurrentStatus(
-                request.vulnerabilityId(),
-                VulnerabilityInstance.InstanceStatus.open,
-                VulnerabilityInstance.InstanceStatus.triaged);
+        applyDecisionToInstances(request.vulnerabilityId(), request.status());
 
         auditService.log(AuditAction.TRIAGE_DECISION_MADE, EntityType.VULNERABILITY, request.vulnerabilityId(),
                 Map.of("sessionId", request.sessionId(),
@@ -388,6 +385,21 @@ public class TriageService {
                         "cveId", vulnerability.getCveId()));
 
         return DecisionMapper.toResponse(decision);
+    }
+
+    // Propagate the decision onto affected open instances. accept_risk/false_positive
+    // are terminal (resolved_at set, so they drop from active + trend counts);
+    // needs_remediation/duplicate stay 'triaged'.
+    private void applyDecisionToInstances(long vulnerabilityId, DecisionStatus decisionStatus) {
+        var open = VulnerabilityInstance.InstanceStatus.open;
+        switch (decisionStatus) {
+            case accepted_risk -> vulnerabilityInstanceRepository.updateStatusWithResolvedAtByCurrentStatus(
+                    vulnerabilityId, open, VulnerabilityInstance.InstanceStatus.accepted_risk);
+            case false_positive -> vulnerabilityInstanceRepository.updateStatusWithResolvedAtByCurrentStatus(
+                    vulnerabilityId, open, VulnerabilityInstance.InstanceStatus.false_positive);
+            case needs_remediation, duplicate -> vulnerabilityInstanceRepository.updateStatusByVulnerabilityIdAndCurrentStatus(
+                    vulnerabilityId, open, VulnerabilityInstance.InstanceStatus.triaged);
+        }
     }
 
     @Transactional(readOnly = true)
@@ -492,11 +504,7 @@ public class TriageService {
 
             triageDecisionRepository.save(decision);
 
-            // Update open vulnerability instances to triaged status
-            vulnerabilityInstanceRepository.updateStatusByVulnerabilityIdAndCurrentStatus(
-                    vulnId,
-                    VulnerabilityInstance.InstanceStatus.open,
-                    VulnerabilityInstance.InstanceStatus.triaged);
+            applyDecisionToInstances(vulnId, decisionStatus);
 
             decidedVulnIds.add(vulnId);
             affectedVulnIds.add((int) vulnId);

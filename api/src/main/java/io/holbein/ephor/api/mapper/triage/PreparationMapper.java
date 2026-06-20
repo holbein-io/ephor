@@ -9,6 +9,7 @@ import io.holbein.ephor.api.entity.TriageSession;
 import io.holbein.ephor.api.entity.Vulnerability;
 import io.holbein.ephor.api.entity.VulnerabilityInstance;
 import io.holbein.ephor.api.entity.Workload;
+import io.holbein.ephor.api.entity.WorkloadLabel;
 import io.holbein.ephor.api.model.enums.PrepStatus;
 import io.holbein.ephor.api.model.enums.PriorityFlag;
 
@@ -56,12 +57,18 @@ public final class PreparationMapper {
                                 .map(c -> c.getImageName() + ":" + (c.getImageTag() != null ? c.getImageTag() : "latest"))
                                 .distinct()
                                 .collect(Collectors.joining(", "));
+                        Map<String, String> labels = w.getLabels().stream()
+                                .collect(Collectors.toMap(
+                                        WorkloadLabel::getLabelKey,
+                                        WorkloadLabel::getLabelValue,
+                                        (a, b) -> b));
                         return new WorkloadSummary(
                                 w.getId(),
                                 w.getNamespace(),
                                 w.getName(),
                                 w.getKind() != null ? w.getKind().name() : null,
-                                imageNames
+                                imageNames,
+                                labels
                         );
                     })
                     .toList();
