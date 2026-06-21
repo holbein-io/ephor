@@ -21,6 +21,11 @@ export interface Vulnerability {
   references?: string[];
   cvss_v3_vector?: string;
   cvss_v3_score?: number;
+  // KEV/EPSS exploitation enrichment (ADR-004); absent until the feeds have run.
+  kev_listed?: boolean;
+  kev_date_added?: string;
+  epss_score?: number;
+  epss_percentile?: number;
   first_detected: string;
   last_seen: string;
   affected_workloads?: number;

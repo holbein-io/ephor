@@ -46,4 +46,11 @@
                  stripComments="false"/>
     </changeSet>
 
+    <changeSet id="007-add-vulnerability-enrichment" author="ephor">
+        <sqlFile path="007_add_vulnerability_enrichment.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+                 stripComments="false"/>
+    </changeSet>
+
 </databaseChangeLog>
