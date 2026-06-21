@@ -7,11 +7,13 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
@@ -48,7 +50,9 @@ public class EnrichmentService {
 
     @PostConstruct
     void init() {
+        // Both feeds 30x-redirect (EPSS hops host then to a dated filename daily), so follow them.
         this.webClient = WebClient.builder()
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
                 .codecs(c -> c.defaultCodecs().maxInMemorySize(MAX_FEED_BYTES))
                 .build();
         this.transactionTemplate = new TransactionTemplate(transactionManager);

@@ -57,7 +57,7 @@ ephor:
   enrichment:
     enabled: ${EPHOR_ENRICHMENT_ENABLED:true}
     kev-url: ${EPHOR_ENRICHMENT_KEV_URL:https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json}
-    epss-url: ${EPHOR_ENRICHMENT_EPSS_URL:https://epss.cyentia.com/epss_scores-current.csv.gz}
+    epss-url: ${EPHOR_ENRICHMENT_EPSS_URL:https://epss.empiricalsecurity.com/epss_scores-current.csv.gz}
     refresh-interval: ${EPHOR_ENRICHMENT_REFRESH_INTERVAL:86400000}
     initial-delay: ${EPHOR_ENRICHMENT_INITIAL_DELAY:30000}
     epss-threshold: ${EPHOR_ENRICHMENT_EPSS_THRESHOLD:0.10}
