@@ -98,10 +98,21 @@ export function useCreateTriagePreparation() {
       vulnerability_id: number;
       prep_status?: string;
       prep_notes?: string;
-      preliminary_decision?: string;
       priority_flag?: string;
       prep_by: string;
     }) => triageService.createPreparation(prepData as any),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['triage-preparations'] });
+    }
+  });
+}
+
+// Hook for deleting a preparation entry
+export function useDeleteTriagePreparation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (preparationId: number) => triageService.deletePreparation(preparationId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['triage-preparations'] });
     }

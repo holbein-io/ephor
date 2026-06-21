@@ -179,9 +179,6 @@ public class TriageService {
         if (request.prepNotes() != null) {
             preparation.setPrepNotes(request.prepNotes());
         }
-        if (request.preliminaryDecision() != null) {
-            preparation.setPreliminaryDecision(request.preliminaryDecision());
-        }
         if (request.priorityFlag() != null) {
             preparation.setPriorityFlag(request.priorityFlag());
         }
@@ -387,9 +384,7 @@ public class TriageService {
         return DecisionMapper.toResponse(decision);
     }
 
-    // Propagate the decision onto affected open instances. accept_risk/false_positive
-    // are terminal (resolved_at set, so they drop from active + trend counts);
-    // needs_remediation/duplicate stay 'triaged'.
+    // Terminal outcomes (accept_risk/false_positive) set resolved_at so they drop from active/trend; needs_remediation stays 'triaged'
     private void applyDecisionToInstances(long vulnerabilityId, DecisionStatus decisionStatus) {
         var open = VulnerabilityInstance.InstanceStatus.open;
         switch (decisionStatus) {
@@ -397,7 +392,7 @@ public class TriageService {
                     vulnerabilityId, open, VulnerabilityInstance.InstanceStatus.accepted_risk);
             case false_positive -> vulnerabilityInstanceRepository.updateStatusWithResolvedAtByCurrentStatus(
                     vulnerabilityId, open, VulnerabilityInstance.InstanceStatus.false_positive);
-            case needs_remediation, duplicate -> vulnerabilityInstanceRepository.updateStatusByVulnerabilityIdAndCurrentStatus(
+            case needs_remediation -> vulnerabilityInstanceRepository.updateStatusByVulnerabilityIdAndCurrentStatus(
                     vulnerabilityId, open, VulnerabilityInstance.InstanceStatus.triaged);
         }
     }

@@ -36,8 +36,5 @@ public record CreateDecisionRequest(
         LocalDate targetDate,
 
         @Schema(description = "Remediation priority (only for needs_remediation)", example = "high")
-        RemediationPriority priority,
-
-        @Schema(description = "ID of the original vulnerability (only for duplicate)")
-        Long duplicateOfVulnerabilityId
+        RemediationPriority priority
 ) {}

@@ -1,7 +1,6 @@
 package io.holbein.ephor.api.entity;
 
 import io.holbein.ephor.api.model.enums.PrepStatus;
-import io.holbein.ephor.api.model.enums.PreliminaryDecision;
 import io.holbein.ephor.api.model.enums.PriorityFlag;
 import jakarta.persistence.*;
 import lombok.*;
@@ -44,10 +43,6 @@ public class TriagePreparation {
 
     @Column(name = "prep_notes", columnDefinition = "TEXT")
     private String prepNotes;
-
-    @Column(name = "preliminary_decision", length = 50)
-    @Enumerated(EnumType.STRING)
-    private PreliminaryDecision preliminaryDecision;
 
     @Builder.Default
     @Column(name = "priority_flag", length = 20)

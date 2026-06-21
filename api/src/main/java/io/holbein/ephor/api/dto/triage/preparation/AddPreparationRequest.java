@@ -1,6 +1,5 @@
 package io.holbein.ephor.api.dto.triage.preparation;
 
-import io.holbein.ephor.api.model.enums.PreliminaryDecision;
 import io.holbein.ephor.api.model.enums.PriorityFlag;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -21,9 +20,6 @@ public record AddPreparationRequest(
 
         @Schema(description = "Priority flag for ordering during triage", example = "high")
         PriorityFlag priorityFlag,
-
-        @Schema(description = "Optional preliminary decision hint")
-        PreliminaryDecision preliminaryDecision,
 
         @Schema(description = "Username of the person preparing", example = "alice")
         @NotNull

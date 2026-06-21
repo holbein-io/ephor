@@ -17,7 +17,7 @@ interface TriageDecisionMakerProps {
   onMakeDecision: (
     vulnerabilityId: number,
     decision: {
-      status: 'accepted_risk' | 'false_positive' | 'needs_remediation' | 'duplicate';
+      status: 'accepted_risk' | 'false_positive' | 'needs_remediation';
       notes?: string;
       assigned_to?: string;
       target_date?: string;
@@ -48,7 +48,7 @@ export function TriageDecisionMaker({
   const totalWorkloadsCount = useMemo(() => {
     if (!preparations) return 0;
     return preparations.reduce((total, prep) => {
-      const workloads = (prep as any).affected_workloads || [];
+      const workloads = prep.affected_workloads || [];
       return total + workloads.length;
     }, 0);
   }, [preparations]);
@@ -64,7 +64,7 @@ export function TriageDecisionMaker({
         let count = 0;
         preparations.forEach(prep => {
           if (decidedIds.has(prep.vulnerability_id)) {
-            const workloads = (prep as any).affected_workloads || [];
+            const workloads = prep.affected_workloads || [];
             count += workloads.length;
           }
         });
@@ -76,7 +76,7 @@ export function TriageDecisionMaker({
   const pendingPreparations = preparations?.filter(p => !decidedVulns.has(p.vulnerability_id)) || [];
   const currentPrep = pendingPreparations[currentIndex];
 
-  const handleDecision = (status: 'accepted_risk' | 'false_positive' | 'needs_remediation' | 'duplicate') => {
+  const handleDecision = (status: 'accepted_risk' | 'false_positive' | 'needs_remediation') => {
     if (!currentPrep) return;
 
     if (status === 'needs_remediation' && targetDate) {
@@ -100,7 +100,7 @@ export function TriageDecisionMaker({
     setDecidedVulns(prev => new Set(prev).add(currentPrep.vulnerability_id));
 
     // Count workloads for this decision
-    const workloads = (currentPrep as any).affected_workloads || [];
+    const workloads = currentPrep.affected_workloads || [];
     setDecidedWorkloadsCount(prev => prev + workloads.length);
 
     // Reset form
@@ -157,7 +157,7 @@ export function TriageDecisionMaker({
   }
 
   // Get current prep's workload count for display
-  const currentWorkloads = (currentPrep as any)?.affected_workloads || [];
+  const currentWorkloads = currentPrep?.affected_workloads || [];
   const currentWorkloadCount = currentWorkloads.length;
 
   return (
@@ -192,25 +192,25 @@ export function TriageDecisionMaker({
                 <div className="flex items-center gap-3">
                   <Badge
                     variant="info"
-                    className={`text-xs ${getSeverityColor((currentPrep as any).severity).tailwind}`}
+                    className={`text-xs ${getSeverityColor(currentPrep.severity || 'UNKNOWN').tailwind}`}
                   >
-                    {(currentPrep as any).severity}
+                    {currentPrep.severity}
                   </Badge>
                   <div>
                     <div className="flex items-center gap-2">
                       <h4 className="font-mono font-medium text-text-primary">
-                        {(currentPrep as any).cve_id}
+                        {currentPrep.cve_id}
                       </h4>
                     </div>
                     <p className="text-sm text-text-secondary mt-1">
-                      {(currentPrep as any).package_name}
-                      {(currentPrep as any).package_version && ` v${(currentPrep as any).package_version}`}
+                      {currentPrep.package_name}
+                      {currentPrep.package_version && ` v${currentPrep.package_version}`}
                     </p>
                   </div>
                 </div>
-                {(currentPrep as any).priority_flag && (
+                {currentPrep.priority_flag && (
                   <Badge variant="warning" className="text-xs">
-                    Priority: {(currentPrep as any).priority_flag}
+                    Priority: {currentPrep.priority_flag}
                   </Badge>
                 )}
               </div>
@@ -227,9 +227,9 @@ export function TriageDecisionMaker({
                   <FileText className="w-3 h-3" />
                   View Details
                 </Link>
-                {(currentPrep as any).primary_url && (
+                {currentPrep.primary_url && (
                   <a
-                    href={(currentPrep as any).primary_url}
+                    href={currentPrep.primary_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-accent/10 text-accent hover:bg-accent/15 rounded border border-accent/30"
@@ -239,7 +239,7 @@ export function TriageDecisionMaker({
                   </a>
                 )}
                 <a
-                  href={`https://nvd.nist.gov/vuln/detail/${(currentPrep as any).cve_id}`}
+                  href={`https://nvd.nist.gov/vuln/detail/${currentPrep.cve_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-purple-500/10 text-purple-400 hover:bg-purple-500/15 rounded border border-purple-500/30"
@@ -248,7 +248,7 @@ export function TriageDecisionMaker({
                   NVD
                 </a>
                 <a
-                  href={`https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=${(currentPrep as any).cve_id}`}
+                  href={`https://www.cisa.gov/known-exploited-vulnerabilities-catalog?search_api_fulltext=${currentPrep.cve_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-danger/10 text-danger hover:bg-danger/10 rounded border border-danger/30"
@@ -257,7 +257,7 @@ export function TriageDecisionMaker({
                   CISA KEV
                 </a>
                 <a
-                  href={`https://cve.mitre.org/cgi-bin/cvename.cgi?name=${(currentPrep as any).cve_id}`}
+                  href={`https://cve.mitre.org/cgi-bin/cvename.cgi?name=${currentPrep.cve_id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 px-2 py-1 text-xs bg-bg-secondary text-text-secondary hover:bg-bg-tertiary rounded border border-border"
@@ -267,24 +267,24 @@ export function TriageDecisionMaker({
                 </a>
               </div>
 
-              {(currentPrep as any).title && (
-                <p className="text-sm text-text-secondary">{(currentPrep as any).title}</p>
+              {currentPrep.title && (
+                <p className="text-sm text-text-secondary">{currentPrep.title}</p>
               )}
 
-              {(currentPrep as any).description && (
-                <p className="text-xs text-text-tertiary">{(currentPrep as any).description}</p>
+              {currentPrep.description && (
+                <p className="text-xs text-text-tertiary">{currentPrep.description}</p>
               )}
 
-              {(currentPrep as any).fixed_version && (
+              {currentPrep.fixed_version && (
                 <p className="text-xs text-success">
-                  Fix available: v{(currentPrep as any).fixed_version}
+                  Fix available: v{currentPrep.fixed_version}
                 </p>
               )}
 
-              {(currentPrep as any).prep_notes && (
+              {currentPrep.prep_notes && (
                 <div className="bg-accent/10 border border-accent/30 rounded p-2">
                   <p className="text-xs font-medium text-accent-hover mb-1">Preparation Notes:</p>
-                  <p className="text-xs text-accent">{(currentPrep as any).prep_notes}</p>
+                  <p className="text-xs text-accent">{currentPrep.prep_notes}</p>
                 </div>
               )}
             </div>
@@ -292,9 +292,9 @@ export function TriageDecisionMaker({
             {/* Affected Workloads */}
             <AffectedWorkloads
               workloads={currentWorkloads}
-              packageName={(currentPrep as any).package_name || ''}
-              packageVersion={(currentPrep as any).package_version}
-              fixedVersion={(currentPrep as any).fixed_version}
+              packageName={currentPrep.package_name || ''}
+              packageVersion={currentPrep.package_version}
+              fixedVersion={currentPrep.fixed_version}
             />
 
             {/* Decision Form */}
@@ -390,13 +390,6 @@ export function TriageDecisionMaker({
                 >
                   <X className="w-4 h-4 mr-1" />
                   False Positive
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => handleDecision('duplicate')}
-                >
-                  Duplicate
                 </Button>
               </div>
 

@@ -55,12 +55,6 @@ export const STATUS_COLORS = {
     textOnly: 'text-danger',
     bgOnly: 'bg-danger/15'
   },
-  duplicate: {
-    tailwind: 'text-severity-low bg-severity-low/15 border-severity-low/30',
-    label: 'Duplicate',
-    textOnly: 'text-severity-low',
-    bgOnly: 'bg-severity-low/15'
-  },
   open: {
     tailwind: 'text-danger bg-danger/15 border-danger/30',
     label: 'Open',

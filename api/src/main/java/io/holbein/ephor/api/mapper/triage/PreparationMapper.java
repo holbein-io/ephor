@@ -29,7 +29,6 @@ public final class PreparationMapper {
                 .vulnerability(vulnerability)
                 .prepStatus(PrepStatus.pending)
                 .prepNotes(request.prepNotes())
-                .preliminaryDecision(request.preliminaryDecision())
                 .priorityFlag(request.priorityFlag() != null ? request.priorityFlag() : PriorityFlag.medium)
                 .prepBy(request.prepBy())
                 .prepAt(Instant.now())
@@ -81,7 +80,6 @@ public final class PreparationMapper {
                 entity.getPrepStatus(),
                 entity.getPrepNotes(),
                 entity.getPriorityFlag(),
-                entity.getPreliminaryDecision(),
                 entity.getPrepBy(),
                 entity.getPrepAt(),
                 vuln.getCveId(),

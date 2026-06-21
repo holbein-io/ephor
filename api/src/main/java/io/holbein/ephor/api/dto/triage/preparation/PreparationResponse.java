@@ -1,7 +1,6 @@
 package io.holbein.ephor.api.dto.triage.preparation;
 
 import io.holbein.ephor.api.dto.triage.shared.WorkloadSummary;
-import io.holbein.ephor.api.model.enums.PreliminaryDecision;
 import io.holbein.ephor.api.model.enums.PrepStatus;
 import io.holbein.ephor.api.model.enums.PriorityFlag;
 import io.holbein.ephor.api.model.enums.SeverityLevel;
@@ -18,7 +17,6 @@ public record PreparationResponse(
         PrepStatus prepStatus,
         String prepNotes,
         PriorityFlag priorityFlag,
-        PreliminaryDecision preliminaryDecision,
         String prepBy,
         Instant prepAt,
 

@@ -2,7 +2,7 @@ export type SeverityLevel = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' | 'UNKNOWN';
 export type RemediationStatus = 'planned' | 'in_progress' | 'completed' | 'abandoned';
 export type RemediationPriority = 'critical' | 'high' | 'medium' | 'low';
 export type CompletionMethod = 'auto_resolved' | 'manual' | 'version_upgrade';
-export type TriageStatus = 'accepted_risk' | 'false_positive' | 'needs_remediation' | 'duplicate';
+export type TriageStatus = 'accepted_risk' | 'false_positive' | 'needs_remediation';
 
 export interface Vulnerability {
   id: number;
@@ -24,6 +24,8 @@ export interface Vulnerability {
   first_detected: string;
   last_seen: string;
   affected_workloads?: number;
+  image_names?: string;
+  namespaces?: string;
   workloads?: Workload[];
 }
 
@@ -200,21 +202,18 @@ export interface TriagePreparation {
   vulnerability_id: number;
   prep_status: 'pending' | 'reviewed' | 'flagged' | 'bulk_candidate' | 'needs_discussion';
   prep_notes?: string;
-  preliminary_decision?: 'accept_risk' | 'escalate' | 'remediate' | 'false_positive';
   priority_flag: 'low' | 'medium' | 'high' | 'critical';
   prep_by: string;
   prep_at: string;
   cve_id?: string;
   package_name?: string;
+  package_version?: string;
   severity?: string;
   title?: string;
-  workloads?: Array<{
-    id: number;
-    name: string;
-    namespace: string;
-    kind: string;
-    image_names?: string;
-  }>;
+  description?: string;
+  primary_url?: string;
+  fixed_version?: string;
+  affected_workloads?: AffectedWorkload[];
 }
 
 export interface TriageBulkPlan {
@@ -291,8 +290,8 @@ export interface AffectedWorkload {
   namespace: string;
   kind: string;
   image_names?: string;
-  instance_id: number;
-  instance_status: string;
+  instance_id?: number;
+  instance_status?: string;
   labels?: Record<string, string>;
 }
 

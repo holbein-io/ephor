@@ -21,7 +21,6 @@ public record DecisionResponse(
         String assignedTo,
         LocalDate targetDate,
         RemediationPriority priority,
-        Long duplicateOfVulnerabilityId,
 
         // Denormalized from Vulnerability
         String cveId,

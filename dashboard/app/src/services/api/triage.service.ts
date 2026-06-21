@@ -20,7 +20,6 @@ export interface TriageSessionMetrics {
   accepted_risk: number;
   false_positive: number;
   needs_remediation: number;
-  duplicate: number;
   average_decision_time?: number;
 }
 

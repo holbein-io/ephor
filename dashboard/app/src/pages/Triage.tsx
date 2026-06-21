@@ -13,6 +13,7 @@ import {
   useCreateTriageSession,
   useUpdateSessionStatus,
   useCreateTriagePreparation,
+  useDeleteTriagePreparation,
   useCreateTriageDecision,
   useCreateTriageBulkPlan,
   useExecuteBulkPlan
@@ -42,6 +43,7 @@ export function Triage() {
     dispatch({ type: 'SET_CURRENT_SESSION', payload: session });
   });
   const createPreparationMutation = useCreateTriagePreparation();
+  const deletePreparationMutation = useDeleteTriagePreparation();
   const createDecisionMutation = useCreateTriageDecision();
   const createBulkPlanMutation = useCreateTriageBulkPlan();
   const executeBulkPlanMutation = useExecuteBulkPlan();
@@ -68,11 +70,14 @@ export function Triage() {
       vulnerability_id: vulnerability.id!,
       prep_status: 'pending',
       prep_notes: notes,
-      preliminary_decision: undefined,
       priority_flag: priority,
       prep_by: state.prepLead || 'System'
     });
   }, [state.currentSession, state.prepLead, createPreparationMutation]);
+
+  const handleRemoveFromSession = useCallback((preparationId: number) => {
+    deletePreparationMutation.mutate(preparationId);
+  }, [deletePreparationMutation]);
 
   const handleCreateBulkPlan = useCallback((plan: any) => {
     if (!state.currentSession) return;
@@ -194,8 +199,8 @@ export function Triage() {
             {state.currentSession.status === 'PREPARING' && (
               <TriagePreparation
                 preparations={preparations as any}
-                sessionId={state.currentSession.id}
                 onAddToSession={handleAddToSession}
+                onRemoveFromSession={handleRemoveFromSession}
                 maximized={prepMaximized}
                 onToggleMaximize={() => setPrepMaximized(prev => !prev)}
               />

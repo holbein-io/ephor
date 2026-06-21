@@ -30,7 +30,6 @@ public record SessionMetricsResponse(
     public record DecisionBreakdown(
             int acceptedRisk,
             int falsePositive,
-            int needsRemediation,
-            int duplicate
+            int needsRemediation
     ) {}
 }

@@ -9,7 +9,7 @@ interface TriageDecision {
   id: number;
   session_id: number;
   vulnerability_id: number;
-  status: 'accepted_risk' | 'false_positive' | 'needs_remediation' | 'duplicate';
+  status: 'accepted_risk' | 'false_positive' | 'needs_remediation';
   notes?: string;
   decided_by?: string;
   decided_at?: string;
@@ -57,8 +57,6 @@ export function TriageSessionReview({
         return 'False Positive';
       case 'needs_remediation':
         return 'Needs Remediation';
-      case 'duplicate':
-        return 'Duplicate';
       default:
         return status;
     }
@@ -78,14 +76,12 @@ export function TriageSessionReview({
   const remediationCount = decisions?.filter(d => d.status === 'needs_remediation').length || 0;
   const acceptedRiskCount = decisions?.filter(d => d.status === 'accepted_risk').length || 0;
   const falsePositiveCount = decisions?.filter(d => d.status === 'false_positive').length || 0;
-  const duplicateCount = decisions?.filter(d => d.status === 'duplicate').length || 0;
 
   // Group decisions by status for organized display
   const groupedDecisions = {
     needs_remediation: decisions?.filter(d => d.status === 'needs_remediation') || [],
     accepted_risk: decisions?.filter(d => d.status === 'accepted_risk') || [],
-    false_positive: decisions?.filter(d => d.status === 'false_positive') || [],
-    duplicate: decisions?.filter(d => d.status === 'duplicate') || []
+    false_positive: decisions?.filter(d => d.status === 'false_positive') || []
   };
 
   return (
@@ -99,7 +95,7 @@ export function TriageSessionReview({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-text-primary">{totalDecisions}</div>
               <div className="text-xs sm:text-sm text-text-tertiary">Total</div>
@@ -115,10 +111,6 @@ export function TriageSessionReview({
             <div className="text-center">
               <div className="text-2xl font-bold text-text-secondary">{falsePositiveCount}</div>
               <div className="text-xs sm:text-sm text-text-tertiary">False Pos.</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-400">{duplicateCount}</div>
-              <div className="text-xs sm:text-sm text-text-tertiary">Duplicates</div>
             </div>
           </div>
         </CardContent>
@@ -137,8 +129,7 @@ export function TriageSessionReview({
                     'w-2 h-2 rounded-full shrink-0',
                     status === 'needs_remediation' && 'bg-success',
                     status === 'accepted_risk' && 'bg-warning',
-                    status === 'false_positive' && 'bg-text-secondary',
-                    status === 'duplicate' && 'bg-purple-400'
+                    status === 'false_positive' && 'bg-text-secondary'
                   )}
                 />
                 <span>{getStatusLabel(status)}</span>

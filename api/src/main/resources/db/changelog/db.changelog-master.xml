@@ -39,4 +39,11 @@
                  stripComments="false"/>
     </changeSet>
 
+    <changeSet id="006-drop-preliminary-decision" author="ephor">
+        <sqlFile path="006_drop_preliminary_decision.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+                 stripComments="false"/>
+    </changeSet>
+
 </databaseChangeLog>

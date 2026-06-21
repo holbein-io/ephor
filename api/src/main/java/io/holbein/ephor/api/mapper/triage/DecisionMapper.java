@@ -40,7 +40,6 @@ public final class DecisionMapper {
                 entity.getAssignedTo(),
                 entity.getTargetDate(),
                 hasRemediation ? rem.getPriority() : null,
-                null, // duplicateOfVulnerabilityId - not tracked on entity yet
                 vuln.getCveId(),
                 vuln.getPackageName(),
                 vuln.getPackageVersion(),

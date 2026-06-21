@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Plus, CheckCircle2, Flag, MessageSquare, ExternalLink, AlertCircle, Search, Loader2, Filter, Maximize2, Minimize2 } from 'lucide-react';
+import { Plus, CheckCircle2, Flag, MessageSquare, ExternalLink, AlertCircle, Search, Loader2, Filter, Maximize2, Minimize2, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -14,8 +14,8 @@ import { dashboardService } from '../../services/api';
 
 interface TriagePreparationProps {
   preparations: TriagePreparationType[] | undefined;
-  sessionId: number;
   onAddToSession: (vulnerability: Vulnerability, priority?: string, notes?: string) => void;
+  onRemoveFromSession?: (preparationId: number) => void;
   maximized?: boolean;
   onToggleMaximize?: () => void;
 }
@@ -25,6 +25,7 @@ const SEVERITIES = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'UNKNOWN'] as const;
 export function TriagePreparation({
   preparations,
   onAddToSession,
+  onRemoveFromSession,
   maximized = false,
   onToggleMaximize,
 }: TriagePreparationProps) {
@@ -349,6 +350,20 @@ export function TriagePreparation({
                         <MessageSquare className="w-4 h-4 mr-1" />
                         Notes
                       </Button>
+                      {added && onRemoveFromSession && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            const prepId = preparations?.find(p => p.vulnerability_id === vuln.id)?.id;
+                            if (prepId !== undefined) onRemoveFromSession(prepId);
+                          }}
+                          className="text-danger border-danger/30 hover:bg-danger/10"
+                          title="Remove from session"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
 
@@ -394,7 +409,7 @@ export function TriagePreparation({
                   )}
 
                   {/* Metadata */}
-                  <div className="flex items-center gap-4 text-xs text-text-tertiary">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-tertiary">
                     <span>First detected: {formatRelativeTime(vuln.first_detected)}</span>
                     <span>Last seen: {formatRelativeTime(vuln.last_seen)}</span>
                     {vuln.fixed_version && (
@@ -405,7 +420,17 @@ export function TriagePreparation({
                     {vuln.affected_workloads > 0 && (
                       <span>Affected workloads: {vuln.affected_workloads}</span>
                     )}
+                    {vuln.namespaces && (
+                      <span>
+                        Namespaces: <span className="text-text-secondary">{vuln.namespaces}</span>
+                      </span>
+                    )}
                   </div>
+                  {vuln.image_names && (
+                    <p className="mt-1 text-xs text-text-tertiary truncate" title={vuln.image_names}>
+                      Images: {vuln.image_names}
+                    </p>
+                  )}
                 </div>
               );
             })}
