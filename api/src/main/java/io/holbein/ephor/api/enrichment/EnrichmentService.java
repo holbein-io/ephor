@@ -130,7 +130,7 @@ public class EnrichmentService {
         }
     }
 
-    private int applyEpss(byte[] gz, Set<String> tracked) {
+    int applyEpss(byte[] gz, Set<String> tracked) {
         int matched = 0;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
                 new GZIPInputStream(new ByteArrayInputStream(gz)), StandardCharsets.UTF_8))) {
