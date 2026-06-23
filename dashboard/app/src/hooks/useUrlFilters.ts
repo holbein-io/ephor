@@ -6,7 +6,7 @@ const DEFAULT_FILTERS: VulnerabilityFilters = {
   status: ['open', 'triaged'],
   page: 1,
   limit: 25,
-  sort_by: 'first_detected',
+  sort_by: 'priority',
   sort_order: 'desc'
 };
 
@@ -28,6 +28,10 @@ export function useUrlFilters() {
     const limit = searchParams.get('limit');
     const sort_by = searchParams.get('sort_by');
     const sort_order = searchParams.get('sort_order');
+    const kev_only = searchParams.get('kev_only');
+    const deployed_only = searchParams.get('deployed_only');
+    const fixable_only = searchParams.get('fixable_only');
+    const min_epss = searchParams.get('min_epss');
 
     return {
       severity: severity ? severity.split(',') : undefined,
@@ -39,7 +43,11 @@ export function useUrlFilters() {
       page: page ? parseInt(page, 10) : DEFAULT_FILTERS.page,
       limit: limit ? parseInt(limit, 10) : DEFAULT_FILTERS.limit,
       sort_by: (sort_by as VulnerabilityFilters['sort_by']) || DEFAULT_FILTERS.sort_by,
-      sort_order: (sort_order as VulnerabilityFilters['sort_order']) || DEFAULT_FILTERS.sort_order
+      sort_order: (sort_order as VulnerabilityFilters['sort_order']) || DEFAULT_FILTERS.sort_order,
+      kev_only: kev_only === 'true' || undefined,
+      deployed_only: deployed_only === 'true' || undefined,
+      fixable_only: fixable_only === 'true' || undefined,
+      min_epss: min_epss ? parseFloat(min_epss) : undefined
     };
   }, [searchParams]);
 
@@ -81,6 +89,18 @@ export function useUrlFilters() {
     if (newFilters.sort_order && newFilters.sort_order !== DEFAULT_FILTERS.sort_order) {
       params.set('sort_order', newFilters.sort_order);
     }
+    if (newFilters.kev_only) {
+      params.set('kev_only', 'true');
+    }
+    if (newFilters.deployed_only) {
+      params.set('deployed_only', 'true');
+    }
+    if (newFilters.fixable_only) {
+      params.set('fixable_only', 'true');
+    }
+    if (newFilters.min_epss) {
+      params.set('min_epss', String(newFilters.min_epss));
+    }
 
     setSearchParams(params, { replace: true });
   }, [setSearchParams]);
@@ -109,6 +129,10 @@ export function useUrlFilters() {
       filters.namespace ||
       filters.scanner_type ||
       filters.workload ||
+      filters.kev_only ||
+      filters.deployed_only ||
+      filters.fixable_only ||
+      filters.min_epss ||
       (filters.status && filters.status.join(',') !== DEFAULT_FILTERS.status?.join(','))
     );
   }, [filters]);
@@ -134,6 +158,18 @@ export function useUrlFilters() {
     }
     if (filters.workload) {
       labels.push({ key: 'workload', label: 'Workload', value: `ID: ${filters.workload}` });
+    }
+    if (filters.kev_only) {
+      labels.push({ key: 'kev_only', label: 'Exploitation', value: 'KEV listed' });
+    }
+    if (filters.deployed_only) {
+      labels.push({ key: 'deployed_only', label: 'Exposure', value: 'Deployed' });
+    }
+    if (filters.fixable_only) {
+      labels.push({ key: 'fixable_only', label: 'Fix', value: 'Fixable' });
+    }
+    if (filters.min_epss) {
+      labels.push({ key: 'min_epss', label: 'EPSS', value: `>= ${(filters.min_epss * 100).toFixed(0)}%` });
     }
 
     return labels;

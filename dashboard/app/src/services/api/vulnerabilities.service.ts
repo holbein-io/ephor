@@ -8,6 +8,21 @@ import {
 } from '../../types';
 
 /**
+ * Filter/URL state is snake_case, but Spring binds query params to camelCase DTO
+ * properties (Jackson's SNAKE_CASE only governs JSON bodies, not @ModelAttribute).
+ * Convert keys so multi-word params (sort_by, scanner_type, kev_only, ...) actually bind.
+ */
+function toCamelParams(filters?: VulnerabilityFilters): Record<string, unknown> | undefined {
+  if (!filters) return undefined;
+  const out: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(filters)) {
+    if (value === undefined || value === null) continue;
+    out[key.replace(/_([a-z])/g, (_, c) => c.toUpperCase())] = value;
+  }
+  return out;
+}
+
+/**
  * Service for vulnerability-related API operations
  */
 export const vulnerabilityService = {
@@ -17,7 +32,7 @@ export const vulnerabilityService = {
   async getVulnerabilities(
     filters?: VulnerabilityFilters
   ): Promise<PaginatedResponse<Vulnerability & { affected_workloads: number }>> {
-    return apiClient.get('/vulnerabilities', filters);
+    return apiClient.get('/vulnerabilities', toCamelParams(filters));
   },
 
   /**
