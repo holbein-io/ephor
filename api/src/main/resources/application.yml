@@ -52,6 +52,15 @@ springdoc:
 ephor:
   user-directory:
     provider: ${EPHOR_USER_DIRECTORY_PROVIDER:internal}
+  # KEV/EPSS exploitation enrichment (ADR-004). Best-effort: a feed failure leaves
+  # prior values intact and never affects ingestion. Disable for air-gapped installs.
+  enrichment:
+    enabled: ${EPHOR_ENRICHMENT_ENABLED:true}
+    kev-url: ${EPHOR_ENRICHMENT_KEV_URL:https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json}
+    epss-url: ${EPHOR_ENRICHMENT_EPSS_URL:https://epss.empiricalsecurity.com/epss_scores-current.csv.gz}
+    refresh-interval: ${EPHOR_ENRICHMENT_REFRESH_INTERVAL:86400000}
+    initial-delay: ${EPHOR_ENRICHMENT_INITIAL_DELAY:30000}
+    epss-threshold: ${EPHOR_ENRICHMENT_EPSS_THRESHOLD:0.10}
 
 # Authentication configuration (oauth2-proxy)
 auth:
