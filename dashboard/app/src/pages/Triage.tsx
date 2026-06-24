@@ -181,12 +181,11 @@ export function Triage() {
             />
 
             {/* Stats Row */}
-            <div className="grid grid-cols-4 gap-2.5 animate-fade-up delay-2">
+            <div className="grid grid-cols-3 gap-2.5 animate-fade-up delay-2">
               {[
                 { label: 'Prepared', value: prepCount, color: 'text-text-primary' },
                 { label: 'Decided', value: decCount, color: 'text-accent-mint' },
                 { label: 'Remaining', value: remaining, color: 'text-accent' },
-                { label: 'Duration', value: state.currentSession.session_duration_minutes ? `${state.currentSession.session_duration_minutes}m` : '-', color: 'text-accent-cool' },
               ].map(stat => (
                 <div key={stat.label} className="bg-bg-secondary border border-border rounded-2xl px-[18px] py-3.5">
                   <div className="font-mono text-[11px] tracking-[0.06em] uppercase text-text-tertiary mb-1">{stat.label}</div>
