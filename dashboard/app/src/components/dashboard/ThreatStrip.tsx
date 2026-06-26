@@ -3,17 +3,16 @@ import { Link } from 'react-router-dom';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { DashboardMetrics } from '../../types';
 import { dashboardService } from '../../services/api';
+import { PRIORITY_TIER_COLORS } from '../../constants/colors';
 
 interface ThreatStripProps {
   metrics: DashboardMetrics;
 }
 
-const SEVERITY_ORDER = [
-  { key: 'CRITICAL', label: 'Critical', color: 'var(--color-severity-critical)' },
-  { key: 'HIGH', label: 'High', color: 'var(--color-severity-high)' },
-  { key: 'MEDIUM', label: 'Medium', color: 'var(--color-severity-medium)' },
-  { key: 'LOW', label: 'Low', color: 'var(--color-severity-low)' },
-  { key: 'UNKNOWN', label: 'Unknown', color: 'var(--color-text-tertiary)' },
+const TIERS = [
+  { key: 'P0', color: 'var(--color-severity-critical)' },
+  { key: 'P1', color: 'var(--color-severity-high)' },
+  { key: 'P2', color: 'var(--color-severity-medium)' },
 ] as const;
 
 function TrendIndicator({ delta }: { delta: number }) {
@@ -24,7 +23,6 @@ function TrendIndicator({ delta }: { delta: number }) {
       </span>
     );
   }
-  // Growing backlog is bad (warn colour), shrinking is good (mint).
   const grew = delta > 0;
   const Icon = grew ? TrendingUp : TrendingDown;
   return (
@@ -39,12 +37,9 @@ function TrendIndicator({ delta }: { delta: number }) {
 }
 
 export function ThreatStrip({ metrics }: ThreatStripProps) {
-  const sev = metrics.by_severity;
-  // Total is derived from the severities shown, so the headline always reconciles
-  // with the row above it. by_severity covers unresolved work (open + in-triage).
-  const total = SEVERITY_ORDER.reduce((sum, s) => sum + (sev[s.key] ?? 0), 0);
+  const actionNow = metrics.action_now;
+  const backlog = metrics.total_active_vulnerabilities;
 
-  // Weekly delta: net change in unresolved vulnerabilities over the last 7 days.
   const { data: trends } = useQuery({
     queryKey: ['vuln-trends-weekly'],
     queryFn: () => dashboardService.getTrends(7),
@@ -60,29 +55,39 @@ export function ThreatStrip({ metrics }: ThreatStripProps) {
     >
       <div className="flex flex-col gap-4">
         <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-text-tertiary">
-          Security Posture
+          Priority Worklist
         </span>
 
-        <div className="flex gap-10">
-          {SEVERITY_ORDER.map(s => (
-            <div key={s.key} className="min-w-[60px]">
-              <div
-                className="font-mono text-[32px] font-medium leading-none animate-count-up"
-                style={{ color: s.color }}
-              >
-                {(sev[s.key] ?? 0).toLocaleString()}
-              </div>
-              <div className="text-[10px] font-bold tracking-[0.1em] uppercase text-text-tertiary mt-2">
-                {s.label}
-              </div>
-            </div>
+        <div className="flex items-baseline gap-3">
+          <span
+            className="font-mono text-[44px] font-medium leading-none animate-count-up shrink-0"
+            style={{ color: actionNow > 0 ? 'var(--color-severity-critical)' : 'var(--color-accent-mint)' }}
+          >
+            {actionNow.toLocaleString()}
+          </span>
+          <span className="text-[15px] text-text-secondary whitespace-nowrap">
+            {actionNow === 1 ? 'finding needs action now' : 'findings need action now'}
+          </span>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {TIERS.map(t => (
+            <span
+              key={t.key}
+              title={PRIORITY_TIER_COLORS[t.key].title}
+              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-mono"
+              style={{ borderColor: 'var(--color-border)' }}
+            >
+              <span className="font-semibold" style={{ color: t.color }}>{t.key}</span>
+              <span className="text-text-primary">{(metrics.by_priority[t.key] ?? 0).toLocaleString()}</span>
+            </span>
           ))}
         </div>
 
         <p className="flex items-center gap-2 text-[13px] text-text-secondary">
           <span>
-            <span className="font-mono font-medium text-text-primary">{total.toLocaleString()}</span>{' '}
-            unresolved vulnerabilities
+            total backlog{' '}
+            <span className="font-mono font-medium text-text-primary">{backlog.toLocaleString()}</span>
           </span>
           {weeklyDelta !== null && (
             <>
@@ -97,7 +102,7 @@ export function ThreatStrip({ metrics }: ThreatStripProps) {
         to="/vulnerabilities"
         className="shrink-0 px-5 py-2.5 rounded-[10px] text-[13px] font-semibold bg-accent text-white shadow-[0_4px_20px_rgba(232,97,58,0.25)] hover:shadow-[0_6px_28px_rgba(232,97,58,0.4)] hover:-translate-y-px transition-all no-underline"
       >
-        View all
+        View worklist
       </Link>
     </section>
   );

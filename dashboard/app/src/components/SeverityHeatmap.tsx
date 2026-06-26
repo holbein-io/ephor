@@ -87,7 +87,7 @@ export function SeverityHeatmap({ maxNamespaces = 6 }: SeverityHeatmapProps) {
   return (
     <div
       className="grid gap-[3px] text-[11px]"
-      style={{ gridTemplateColumns: '76px repeat(4, 1fr)' }}
+      style={{ gridTemplateColumns: '120px repeat(4, 1fr)' }}
     >
       <div />
       {SEVERITY_LEVELS.map(sev => (

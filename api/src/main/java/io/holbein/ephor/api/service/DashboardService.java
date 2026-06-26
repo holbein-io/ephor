@@ -2,6 +2,7 @@ package io.holbein.ephor.api.service;
 
 import io.holbein.ephor.api.dto.dashboard.DashboardMetricsResponse;
 import io.holbein.ephor.api.dto.dashboard.NamespaceComparisonResponse;
+import io.holbein.ephor.api.dto.dashboard.NamespacePriorityResponse;
 import io.holbein.ephor.api.dto.dashboard.VulnerabilityTrendResponse;
 import io.holbein.ephor.api.entity.VulnerabilityInstance;
 import io.holbein.ephor.api.model.enums.EscalationStatus;
@@ -9,6 +10,7 @@ import io.holbein.ephor.api.model.enums.SeverityLevel;
 import io.holbein.ephor.api.repositories.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,9 @@ public class DashboardService {
     private final VulnerabilityInstanceRepository instanceRepository;
     private final EscalationRepository escalationRepository;
     private final WorkloadRepository workloadRepository;
+
+    @Value("${ephor.enrichment.epss-threshold:0.10}")
+    private double epssThreshold;
 
     public DashboardMetricsResponse getMetrics() {
         List<VulnerabilityInstance.InstanceStatus> activeStatuses = List.of(
@@ -40,6 +45,9 @@ public class DashboardService {
 
         Map<String, Long> bySeverity = buildSeverityMap(activeStatuses);
 
+        Map<String, Long> byPriority = buildPriorityMap();
+        long actionNow = byPriority.getOrDefault("P0", 0L) + byPriority.getOrDefault("P1", 0L);
+
         long activeEscalations = escalationRepository.countByStatusIn(
                 List.of(EscalationStatus.pending, EscalationStatus.acknowledged));
 
@@ -48,8 +56,25 @@ public class DashboardService {
                 totalActive,
                 bySeverity,
                 byStatus,
+                byPriority,
+                actionNow,
                 activeEscalations
         );
+    }
+
+    public List<NamespacePriorityResponse> getNamespacePriority() {
+        List<Object[]> rows = instanceRepository.namespacePriorityComparison(epssThreshold);
+        List<NamespacePriorityResponse> result = new ArrayList<>();
+        for (Object[] row : rows) {
+            result.add(new NamespacePriorityResponse(
+                    (String) row[0],
+                    ((Number) row[1]).longValue(),
+                    ((Number) row[2]).longValue(),
+                    ((Number) row[3]).longValue(),
+                    ((Number) row[4]).longValue()
+            ));
+        }
+        return result;
     }
 
     public List<VulnerabilityTrendResponse> getTrends(int days) {
@@ -96,6 +121,19 @@ public class DashboardService {
             SeverityLevel severity = (SeverityLevel) row[0];
             long count = (Long) row[1];
             map.put(severity.name(), count);
+        }
+        return map;
+    }
+
+    private Map<String, Long> buildPriorityMap() {
+        Map<String, Long> map = new LinkedHashMap<>();
+        for (int tier = 0; tier <= 3; tier++) {
+            map.put("P" + tier, 0L);
+        }
+        for (Object[] row : instanceRepository.priorityTierTotals(epssThreshold)) {
+            int tier = ((Number) row[0]).intValue();
+            long count = ((Number) row[1]).longValue();
+            map.put("P" + tier, count);
         }
         return map;
     }
