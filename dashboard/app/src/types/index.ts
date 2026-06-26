@@ -107,6 +107,13 @@ export interface DashboardMetrics {
     accepted_risk: number;
     triaged: number;
   };
+  by_priority: {
+    P0: number;
+    P1: number;
+    P2: number;
+    P3: number;
+  };
+  action_now: number;
   active_escalations: number;
 }
 
@@ -419,4 +426,12 @@ export interface NamespaceComparison {
   high: number;
   medium: number;
   low: number;
+}
+
+export interface NamespacePriority {
+  namespace: string;
+  p0: number;
+  p1: number;
+  p2: number;
+  p3: number;
 }

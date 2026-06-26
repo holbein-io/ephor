@@ -3,7 +3,7 @@ import { ThreatStrip } from '../components/dashboard/ThreatStrip';
 import { SeverityMegaStrip } from '../components/dashboard/SeverityMegaStrip';
 import { BentoCard } from '../components/dashboard/BentoCard';
 import { StatusOverview } from '../components/dashboard/StatusOverview';
-import { SeverityHeatmap } from '../components/SeverityHeatmap';
+import { NamespaceHeatmap } from '../components/NamespaceHeatmap';
 import { ActivityFeed } from '../components/ActivityFeed';
 import { SbomCoverage } from '../components/dashboard/SbomCoverage';
 import { PreScanAlerts } from '../components/dashboard/PreScanAlerts';
@@ -59,33 +59,16 @@ export function Dashboard() {
             action={{ label: 'Expand →', href: '/vulnerabilities' }}
             span={5}
           >
-            <SeverityHeatmap maxNamespaces={5} />
+            <NamespaceHeatmap maxNamespaces={5} />
           </BentoCard>
 
-          {hasPermission('VIEW_ADMIN') ? (
+          {hasPermission('VIEW_ADMIN') && (
             <BentoCard
               title="Recent Activity"
               action={{ label: 'All →', href: '#' }}
               span={4}
             >
               <ActivityFeed limit={8} />
-            </BentoCard>
-          ) : (
-            <BentoCard title="Summary" span={4}>
-              <div className="flex flex-col gap-3 text-sm text-text-secondary">
-                <div className="flex justify-between">
-                  <span>Total vulnerabilities</span>
-                  <span className="font-mono font-medium text-text-primary">
-                    {metrics.total_vulnerabilities.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>False positives</span>
-                  <span className="font-mono font-medium text-text-primary">
-                    {metrics.by_status.false_positive}
-                  </span>
-                </div>
-              </div>
             </BentoCard>
           )}
 
@@ -96,7 +79,7 @@ export function Dashboard() {
           <BentoCard
             title="Pre-Scan Alerts"
             action={{ label: 'View all →', href: '/inventory?tab=prescan' }}
-            span={8}
+            span={hasPermission('VIEW_ADMIN') ? 8 : 12}
           >
             <PreScanAlerts />
           </BentoCard>

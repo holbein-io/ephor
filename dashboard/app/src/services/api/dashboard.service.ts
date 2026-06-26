@@ -2,7 +2,8 @@ import { apiClient } from './client';
 import {
   DashboardMetrics,
   VulnerabilityTrend,
-  NamespaceComparison
+  NamespaceComparison,
+  NamespacePriority
 } from '../../types';
 
 export const dashboardService = {
@@ -20,5 +21,9 @@ export const dashboardService = {
 
   async getNamespaceComparison(): Promise<NamespaceComparison[]> {
     return apiClient.get('/dashboard/namespace-comparison');
+  },
+
+  async getNamespacePriority(): Promise<NamespacePriority[]> {
+    return apiClient.get('/dashboard/namespace-priority');
   }
 };

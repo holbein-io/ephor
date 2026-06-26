@@ -1,7 +1,7 @@
 # ADR-004: Runtime-Aware Prioritization (KEV/EPSS Enrichment)
 
 ## Status
-Proposed
+Accepted - Implemented. Phase 1 (KEV/EPSS enrichment), Phase 2 (prioritization tiers, sort, filters), and Phase 3 (dashboard reframe to running/exploitable/fixable + priority worklist hero) all delivered.
 
 ## Date
 2026-06-21

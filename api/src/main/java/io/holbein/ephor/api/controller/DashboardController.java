@@ -2,6 +2,7 @@ package io.holbein.ephor.api.controller;
 
 import io.holbein.ephor.api.dto.dashboard.DashboardMetricsResponse;
 import io.holbein.ephor.api.dto.dashboard.NamespaceComparisonResponse;
+import io.holbein.ephor.api.dto.dashboard.NamespacePriorityResponse;
 import io.holbein.ephor.api.dto.dashboard.VulnerabilityTrendResponse;
 import io.holbein.ephor.api.service.DashboardService;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,5 +41,10 @@ public class DashboardController {
     @GetMapping("/namespace-comparison")
     public List<NamespaceComparisonResponse> getNamespaceComparison() {
         return dashboardService.getNamespaceComparison();
+    }
+
+    @GetMapping("/namespace-priority")
+    public List<NamespacePriorityResponse> getNamespacePriority() {
+        return dashboardService.getNamespacePriority();
     }
 }
