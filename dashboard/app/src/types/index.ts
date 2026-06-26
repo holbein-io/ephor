@@ -26,6 +26,8 @@ export interface Vulnerability {
   kev_date_added?: string;
   epss_score?: number;
   epss_percentile?: number;
+  // Derived priority tier "P0".."P3" (ADR-004 Phase 2); present on list rows.
+  priority_tier?: string;
   first_detected: string;
   last_seen: string;
   affected_workloads?: number;
@@ -130,8 +132,13 @@ export interface VulnerabilityFilters {
   last_seen_to?: string;
   page?: number;
   limit?: number;
-  sort_by?: 'severity' | 'first_detected' | 'last_seen' | 'cve_id';
+  sort_by?: 'severity' | 'first_detected' | 'last_seen' | 'cve_id' | 'priority' | 'epss';
   sort_order?: 'asc' | 'desc';
+  // Exploitation filters (ADR-004 Phase 2).
+  kev_only?: boolean;
+  deployed_only?: boolean;
+  fixable_only?: boolean;
+  min_epss?: number;
 }
 
 export interface TriageSession {

@@ -12,7 +12,7 @@ interface TriageWorkflowStepperProps {
 const steps = [
   { id: 'PREPARING', name: 'Prepare' },
   { id: 'ACTIVE', name: 'Decide' },
-  { id: 'COMPLETED', name: 'Review' },
+  { id: 'COMPLETED', name: 'Complete' },
 ];
 
 function getStepState(stepId: string, currentStatus: TriageStatus): 'completed' | 'current' | 'upcoming' {
@@ -20,6 +20,7 @@ function getStepState(stepId: string, currentStatus: TriageStatus): 'completed' 
   const currentIdx = order.indexOf(currentStatus);
   const stepIdx = order.indexOf(stepId);
   if (currentStatus === 'CANCELLED') return 'upcoming';
+  if (currentStatus === 'COMPLETED') return 'completed';
   if (stepIdx < currentIdx) return 'completed';
   if (stepIdx === currentIdx) return 'current';
   return 'upcoming';
@@ -37,7 +38,7 @@ export function TriageWorkflowStepper({
     if (stepId === 'ACTIVE') {
       return state === 'current' ? `${decisionsCount} decided` : state === 'completed' ? `${decisionsCount} decided` : 'waiting';
     }
-    return 'waiting';
+    return state === 'completed' ? `${decisionsCount} decided` : 'waiting';
   };
 
   return (

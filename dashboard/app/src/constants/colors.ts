@@ -96,6 +96,34 @@ export const PRIORITY_COLORS = {
   }
 } as const;
 
+export const PRIORITY_TIER_COLORS = {
+  P0: {
+    tailwind: 'text-severity-critical bg-severity-critical/10 border-severity-critical/30',
+    label: 'P0',
+    title: 'P0 - Act now: deployed, on CISA KEV, and fixable'
+  },
+  P1: {
+    tailwind: 'text-severity-high bg-severity-high/10 border-severity-high/30',
+    label: 'P1',
+    title: 'P1 - Urgent: deployed, exploitable, and fixable'
+  },
+  P2: {
+    tailwind: 'text-severity-medium bg-severity-medium/10 border-severity-medium/30',
+    label: 'P2',
+    title: 'P2 - Plan: deployed and exploitable, no fix available yet'
+  },
+  P3: {
+    tailwind: 'text-text-secondary bg-bg-tertiary border-border',
+    label: 'P3',
+    title: 'P3 - Monitor'
+  }
+} as const;
+
+export function getPriorityTierColor(tier?: string): typeof PRIORITY_TIER_COLORS[keyof typeof PRIORITY_TIER_COLORS] | null {
+  if (!tier) return null;
+  return PRIORITY_TIER_COLORS[tier as keyof typeof PRIORITY_TIER_COLORS] || null;
+}
+
 export const TRIAGE_SESSION_STATUS_COLORS = {
   PREPARING: {
     tailwind: 'text-warning bg-warning/15',

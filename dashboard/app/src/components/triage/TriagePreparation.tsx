@@ -8,6 +8,7 @@ import { Input } from '../ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { Vulnerability, TriagePreparation as TriagePreparationType } from '../../types';
 import { SEVERITY_COLORS } from '../../constants/colors';
+import { PriorityTierBadge } from '../PriorityTierBadge';
 import { formatRelativeTime, debounce } from '../../utils';
 import { useInfiniteTriageVulnerabilities } from '../../hooks/useInfiniteTriageVulnerabilities';
 import { dashboardService } from '../../services/api';
@@ -34,8 +35,11 @@ export function TriagePreparation({
   const [searchFilter, setSearchFilter] = useState('');
   const [namespace, setNamespaceRaw] = useState('');
   const setNamespace = (v: string) => setNamespaceRaw(v === 'all' ? '' : v);
-  const [sortBy, setSortBy] = useState<'severity' | 'first_detected' | 'last_seen' | 'cve_id'>('severity');
+  const [sortBy, setSortBy] = useState<'priority' | 'epss' | 'severity' | 'first_detected' | 'last_seen' | 'cve_id'>('priority');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [kevOnly, setKevOnly] = useState(false);
+  const [fixableOnly, setFixableOnly] = useState(false);
+  const [minEpss, setMinEpss] = useState<number | undefined>(undefined);
   const [showFilters, setShowFilters] = useState(false);
   const [notesInputVulnId, setNotesInputVulnId] = useState<number | null>(null);
   const [notesText, setNotesText] = useState('');
@@ -60,8 +64,11 @@ export function TriagePreparation({
     namespace: namespace || undefined,
     search: searchFilter || undefined,
     sort_by: sortBy,
-    sort_order: sortOrder
-  }), [selectedSeverities, namespace, searchFilter, sortBy, sortOrder]);
+    sort_order: sortOrder,
+    kev_only: kevOnly || undefined,
+    fixable_only: fixableOnly || undefined,
+    min_epss: minEpss
+  }), [selectedSeverities, namespace, searchFilter, sortBy, sortOrder, kevOnly, fixableOnly, minEpss]);
 
   const {
     vulnerabilities,
@@ -227,6 +234,8 @@ export function TriagePreparation({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="priority">Priority</SelectItem>
+                    <SelectItem value="epss">EPSS Score</SelectItem>
                     <SelectItem value="severity">Severity</SelectItem>
                     <SelectItem value="first_detected">First detected</SelectItem>
                     <SelectItem value="last_seen">Last seen</SelectItem>
@@ -243,6 +252,43 @@ export function TriagePreparation({
                   <SelectContent>
                     <SelectItem value="desc">Descending</SelectItem>
                     <SelectItem value="asc">Ascending</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs text-text-tertiary mb-1 block">Exploitation</label>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant={kevOnly ? 'primary' : 'outline'}
+                    onClick={() => setKevOnly(v => !v)}
+                  >
+                    KEV
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant={fixableOnly ? 'primary' : 'outline'}
+                    onClick={() => setFixableOnly(v => !v)}
+                  >
+                    Fixable
+                  </Button>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-text-tertiary mb-1 block">Min EPSS</label>
+                <Select
+                  value={minEpss != null ? String(minEpss) : 'any'}
+                  onValueChange={(v) => setMinEpss(v === 'any' ? undefined : parseFloat(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="any">Any</SelectItem>
+                    <SelectItem value="0.1">&gt;= 10%</SelectItem>
+                    <SelectItem value="0.3">&gt;= 30%</SelectItem>
+                    <SelectItem value="0.5">&gt;= 50%</SelectItem>
+                    <SelectItem value="0.9">&gt;= 90%</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -289,6 +335,7 @@ export function TriagePreparation({
                           <h4 className="font-medium text-text-primary">
                             {vuln.cve_id}
                           </h4>
+                          <PriorityTierBadge tier={vuln.priority_tier} className="px-1.5 py-px text-[10.5px]" />
                           {vuln.primary_url && (
                             <a
                               href={vuln.primary_url}
