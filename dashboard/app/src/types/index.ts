@@ -158,14 +158,13 @@ export interface TriageSession {
   session_started_at?: string;
   prep_lead?: string;
   prep_notes?: string;
-  vulnerabilities_reviewed: number;
-  vulnerabilities_flagged: number;
-  bulk_operations_planned: number;
+  preparations_count: number;
+  decisions_count: number;
+  bulk_plans_count: number;
   session_duration_minutes?: number;
   prep_duration_minutes?: number;
   created_at: string;
   completed_at?: string;
-  decisions_count?: number;
   decisions?: TriageDecision[];
 }
 

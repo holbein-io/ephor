@@ -81,7 +81,7 @@ export function TriageSessionManager({
                   </span>
                 </div>
                 <div className="text-[11px] text-text-secondary font-mono">
-                  {session.vulnerabilities_reviewed || 0} reviewed / {session.decisions_count || 0} decided
+                  {session.preparations_count || 0} reviewed / {session.decisions_count || 0} decided
                 </div>
               </div>
             );
