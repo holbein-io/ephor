@@ -8,7 +8,6 @@ export interface TriageState {
   prepNotes: string;
   sessionNotes: string;
   attendees: string[];
-  selectedVulns: Set<number>;
   showCommentModal: { vulnId: number; vulnCve: string } | null;
   commentText: string;
   currentTriageIndex: number;
@@ -31,9 +30,6 @@ export type TriageAction =
   | { type: 'ADD_ATTENDEE'; payload: string }
   | { type: 'REMOVE_ATTENDEE'; payload: number }
   | { type: 'UPDATE_ATTENDEE'; payload: { index: number; value: string } }
-  | { type: 'ADD_SELECTED_VULN'; payload: number }
-  | { type: 'REMOVE_SELECTED_VULN'; payload: number }
-  | { type: 'CLEAR_SELECTED_VULNS' }
   | { type: 'SET_COMMENT_MODAL'; payload: { vulnId: number; vulnCve: string } | null }
   | { type: 'SET_COMMENT_TEXT'; payload: string }
   | { type: 'SET_CURRENT_TRIAGE_INDEX'; payload: number }
@@ -53,7 +49,6 @@ export const initialTriageState: TriageState = {
   prepNotes: '',
   sessionNotes: '',
   attendees: [''],
-  selectedVulns: new Set(),
   showCommentModal: null,
   commentText: '',
   currentTriageIndex: 0,
@@ -102,20 +97,6 @@ export function triageReducer(state: TriageState, action: TriageAction): TriageS
           i === action.payload.index ? action.payload.value : a
         )
       };
-
-    case 'ADD_SELECTED_VULN':
-      return {
-        ...state,
-        selectedVulns: new Set([...state.selectedVulns, action.payload])
-      };
-
-    case 'REMOVE_SELECTED_VULN':
-      const newSelectedVulns = new Set(state.selectedVulns);
-      newSelectedVulns.delete(action.payload);
-      return { ...state, selectedVulns: newSelectedVulns };
-
-    case 'CLEAR_SELECTED_VULNS':
-      return { ...state, selectedVulns: new Set() };
 
     case 'SET_COMMENT_MODAL':
       return { ...state, showCommentModal: action.payload };

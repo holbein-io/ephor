@@ -66,7 +66,7 @@ export function ThreatStrip({ metrics }: ThreatStripProps) {
             {actionNow.toLocaleString()}
           </span>
           <span className="text-[15px] text-text-secondary whitespace-nowrap">
-            {actionNow === 1 ? 'finding needs action now' : 'findings need action now'}
+            {actionNow === 1 ? 'CVE needs action now' : 'CVEs need action now'}
           </span>
         </div>
 
