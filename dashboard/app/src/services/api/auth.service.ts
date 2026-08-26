@@ -57,9 +57,6 @@ export const authService = {
     }
   },
 
-  /**
-   * Get auth configuration
-   */
   async getAuthConfig(): Promise<AuthConfig> {
     return apiClient.get<AuthConfig>('/auth/config');
   },

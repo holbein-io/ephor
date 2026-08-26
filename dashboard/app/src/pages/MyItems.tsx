@@ -38,10 +38,10 @@ function ItemCard({ title, count, countStyle, children }: {
   return (
     <div className="bg-bg-secondary border border-border rounded-2xl overflow-hidden animate-fade-up">
       <div className="flex items-center justify-between px-[18px] py-3 border-b border-border-subtle">
-        <span className="font-mono text-[10px] font-medium tracking-[0.12em] uppercase text-text-tertiary">
+        <span className="font-mono text-micro font-medium tracking-[0.12em] uppercase text-text-tertiary">
           {title}
         </span>
-        <span className={`inline-flex items-center justify-center min-w-[22px] h-[22px] px-[7px] rounded-full font-mono text-[11px] font-medium border ${countStyle}`}>
+        <span className={`inline-flex items-center justify-center min-w-[22px] h-[22px] px-[7px] rounded-full font-mono text-caption font-medium border ${countStyle}`}>
           {count}
         </span>
       </div>
@@ -63,7 +63,7 @@ export function MyItems() {
 
   if (isLoading) {
     return (
-      <div className="max-w-[1200px] mx-auto space-y-6">
+      <div className="space-y-6">
         <div className="h-10 bg-bg-tertiary rounded-2xl animate-pulse" />
         <div className="grid grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
@@ -89,12 +89,11 @@ export function MyItems() {
     : user?.username?.slice(0, 2).toUpperCase() || '?';
 
   return (
-    <div className="max-w-[1200px] mx-auto">
-      {/* Header */}
+    <div>
       <div className="flex items-start justify-between gap-4 mb-6 animate-fade-up">
         <div>
           <h1 className="font-display text-2xl italic text-text-primary tracking-tight">My Items</h1>
-          <p className="text-[13px] text-text-tertiary mt-1">Your assigned work and recent activity</p>
+          <p className="text-sm text-text-tertiary mt-1">Your assigned work and recent activity</p>
         </div>
         <div className="flex items-center gap-3 px-4 py-2.5 bg-bg-secondary border border-border rounded-2xl">
           <div
@@ -104,13 +103,12 @@ export function MyItems() {
             {initials}
           </div>
           <div>
-            <div className="text-[13.5px] font-semibold text-text-primary">{user?.displayName || user?.username}</div>
-            <div className="text-[11.5px] text-text-tertiary mt-px">{user?.groups?.[0] || 'Team Member'}</div>
+            <div className="text-sm font-semibold text-text-primary">{user?.displayName || user?.username}</div>
+            <div className="text-caption text-text-tertiary mt-px">{user?.groups?.[0] || 'Team Member'}</div>
           </div>
         </div>
       </div>
 
-      {/* 3-column grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <ItemCard title="My Remediations" count={remediations.length} countStyle={countBadgeStyles.remediations}>
           {remediations.map(r => (
@@ -122,10 +120,10 @@ export function MyItems() {
               <span className={`w-[7px] h-[7px] rounded-full flex-shrink-0 ${severityDotColors[r.status] || 'bg-severity-medium'}`} />
               <span className="font-mono text-xs font-medium text-accent-cool flex-1 min-w-0 truncate">{r.cve_id}</span>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className={`text-[10.5px] font-medium px-2 py-0.5 rounded border ${statusBadgeStyles[r.status] || statusBadgeStyles.pending}`}>
+                <span className={`text-micro font-medium px-2 py-0.5 rounded border ${statusBadgeStyles[r.status] || statusBadgeStyles.pending}`}>
                   {formatStatus(r.status)}
                 </span>
-                <span className="font-mono text-[10.5px] text-text-tertiary whitespace-nowrap">{r.target_date || '-'}</span>
+                <span className="font-mono text-micro text-text-tertiary whitespace-nowrap">{r.target_date || '-'}</span>
               </div>
             </Link>
           ))}
@@ -139,11 +137,11 @@ export function MyItems() {
                   <Link to={`/vulnerabilities/${e.vulnerability_id}`} className="font-mono text-xs font-medium text-accent-cool no-underline hover:underline">
                     {e.cve_id}
                   </Link>
-                  <span className={`text-[10.5px] font-medium px-2 py-0.5 rounded border ${statusBadgeStyles[e.status] || statusBadgeStyles.escalated}`}>
+                  <span className={`text-micro font-medium px-2 py-0.5 rounded border ${statusBadgeStyles[e.status] || statusBadgeStyles.escalated}`}>
                     {formatStatus(e.status)}
                   </span>
                 </div>
-                <span className="text-[11px] text-text-tertiary whitespace-nowrap">{formatRelativeTime(e.escalated_at)}</span>
+                <span className="text-caption text-text-tertiary whitespace-nowrap">{formatRelativeTime(e.escalated_at)}</span>
               </div>
             </div>
           ))}
@@ -161,9 +159,9 @@ export function MyItems() {
                   ) : (
                     <span className="font-mono text-xs text-text-secondary">{label}</span>
                   )}
-                  <span className="text-[11px] text-text-tertiary whitespace-nowrap">{formatRelativeTime(c.created_at)}</span>
+                  <span className="text-caption text-text-tertiary whitespace-nowrap">{formatRelativeTime(c.created_at)}</span>
                 </div>
-                <p className="text-[12.5px] text-text-secondary leading-[1.45] line-clamp-2">{c.body}</p>
+                <p className="text-xs text-text-secondary leading-[1.45] line-clamp-2">{c.body}</p>
               </div>
             );
           })}

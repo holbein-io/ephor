@@ -50,9 +50,6 @@ export function useKeyboardShortcuts(shortcuts: Shortcut[], enabled = true) {
   }, [handleKeyDown, enabled]);
 }
 
-/**
- * Format shortcut key for display
- */
 export function formatShortcutKey(shortcut: Omit<Shortcut, 'handler' | 'description'>): string {
   const parts: string[] = [];
 

@@ -23,27 +23,15 @@ export interface MyItemsResponse {
   recent_comments: Array<{ id: number; entity_type: string | null; entity_id: number | null; vulnerability_id: number | null; cve_id: string | null; body: string; created_at: string }>;
 }
 
-/**
- * Service for user directory operations
- */
 export const usersService = {
-  /**
-   * Get directory provider capabilities
-   */
   async getCapabilities(): Promise<DirectoryCapabilities> {
     return apiClient.get('/users/capabilities');
   },
 
-  /**
-   * Search known users by query
-   */
   async searchUsers(query: string, limit = 10): Promise<KnownUserDto[]> {
     return apiClient.get(`/users/search?q=${encodeURIComponent(query)}&limit=${limit}`);
   },
 
-  /**
-   * Get items assigned to the current user
-   */
   async getMyItems(): Promise<MyItemsResponse> {
     return apiClient.get('/users/me/items');
   },

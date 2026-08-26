@@ -7,15 +7,11 @@ export interface NavBadges {
   escalations: number;
 }
 
-/**
- * Hook to fetch navigation badge counts
- * Used by sidebar to show counts next to nav items
- */
 export function useNavBadges() {
   const { data: metrics } = useQuery({
     queryKey: ['nav-badges-metrics'],
     queryFn: () => dashboardService.getMetrics(),
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 60000,
     staleTime: 30000
   });
 

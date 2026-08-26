@@ -1,6 +1,16 @@
 import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from 'tailwind-merge';
 import { format, formatDistanceToNow, isValid, parseISO } from 'date-fns';
+
+// Without this, tailwind-merge reads the two sub-xs scale steps as text colours
+// and drops the colour class they are combined with.
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [{ text: ['micro', 'caption'] }],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -72,18 +82,68 @@ export function truncateText(text: string, maxLength: number): string {
   return text.slice(0, maxLength) + '...';
 }
 
-export function shortenImageName(fullName: string): string {
-  const parts = fullName.split('/');
-  if (parts.length >= 3) return parts.slice(-2).join('/');
-  if (parts.length === 2 && parts[0].includes('.')) return parts[1];
-  return fullName;
+export interface ParsedImageRef {
+  /** Registry host, including port when present. Undefined for implicit Docker Hub. */
+  registry?: string;
+  /** Path after the registry, e.g. "docker-local/platform/payments-api". */
+  repository: string;
+  /** Last path segment -- the part that identifies the service. */
+  name: string;
+  /** Second-to-last path segment, when there is one. */
+  namespace?: string;
+  tag?: string;
+  /** Full digest including algorithm, e.g. "sha256:abc123...". */
+  digest?: string;
+  /** The reference exactly as received. */
+  full: string;
 }
 
+/**
+ * The API composes this field as CONCAT(image_name, ':', image_tag), so a naive
+ * split(':') loses the tag whenever the registry carries a port. Split on the last
+ * colon that follows the last slash instead, and peel the digest off first.
+ */
+export function parseImageRef(reference: string): ParsedImageRef {
+  const full = reference.trim();
+
+  let remainder = full;
+  let digest: string | undefined;
+  const digestAt = remainder.indexOf('@');
+  if (digestAt !== -1) {
+    digest = remainder.slice(digestAt + 1) || undefined;
+    remainder = remainder.slice(0, digestAt);
+  }
+
+  let tag: string | undefined;
+  const lastColon = remainder.lastIndexOf(':');
+  if (lastColon > remainder.lastIndexOf('/')) {
+    tag = remainder.slice(lastColon + 1) || undefined;
+    remainder = remainder.slice(0, lastColon);
+  }
+
+  const segments = remainder.split('/').filter(Boolean);
+
+  let registry: string | undefined;
+  const first = segments[0];
+  if (segments.length > 1 && first && (first.includes('.') || first.includes(':') || first === 'localhost')) {
+    registry = segments.shift();
+  }
+
+  const repository = segments.join('/') || remainder;
+  const name = segments[segments.length - 1] || repository;
+  const namespace = segments.length > 1 ? segments[segments.length - 2] : undefined;
+
+  return { registry, repository, name, namespace, tag, digest, full };
+}
+
+const SHA1_HEX = /^[0-9a-f]{40}$/i;
+
 export function formatImageTag(tag: string): string {
-  if (tag.length === 40) {
-    return tag.substring(0, 8);
-  } else if (tag.startsWith('sha256:')) {
+  if (tag.startsWith('sha256:')) {
     return 'sha:' + tag.substring(7, 15);
+  }
+  if (SHA1_HEX.test(tag)) {
+    return tag.substring(0, 8);
   }
   return tag;
 }

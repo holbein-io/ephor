@@ -62,13 +62,13 @@ export function SbomExplorer() {
 
   return (
     <div className="grid grid-cols-12 gap-4">
-      <div className="col-span-4 bg-bg-secondary border border-border rounded-2xl overflow-hidden">
+      <div className="col-span-12 lg:col-span-4 bg-bg-secondary border border-border rounded-2xl overflow-hidden">
         <div className="px-5 py-3 border-b border-border">
-          <span className="font-mono text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
+          <span className="font-mono text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">
             Images ({images.length})
           </span>
         </div>
-        <div className="max-h-[500px] overflow-y-auto">
+        <div className="max-h-[calc(100vh-24rem)] min-h-[18rem] overflow-y-auto">
           {images.map((img) => (
             <button
               key={img}
@@ -78,7 +78,7 @@ export function SbomExplorer() {
                 selectedImage === img ? 'bg-accent/5' : 'hover:bg-bg-hover'
               )}
             >
-              <span className="font-mono text-[12px] text-text-primary truncate">{img}</span>
+              <span className="font-mono text-xs text-text-primary truncate">{img}</span>
               <ChevronRight className={cn('h-3.5 w-3.5 text-text-tertiary flex-shrink-0 transition-transform',
                 selectedImage === img && 'rotate-90'
               )} />
@@ -87,13 +87,13 @@ export function SbomExplorer() {
         </div>
       </div>
 
-      <div className="col-span-8 space-y-4">
+      <div className="col-span-12 lg:col-span-8 space-y-4">
         {selectedImage && metadata && (
           <div className="bg-bg-secondary border border-border rounded-2xl px-5 py-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-mono text-[14px] font-medium text-text-primary">{selectedImage}</h3>
-                <p className="text-[12px] text-text-secondary mt-1">
+                <h3 className="font-mono text-sm font-medium text-text-primary">{selectedImage}</h3>
+                <p className="text-xs text-text-secondary mt-1">
                   {metadata.format.toUpperCase()} -- {metadata.package_count} packages -- last seen {formatDate(metadata.last_seen)}
                 </p>
               </div>
@@ -111,26 +111,26 @@ export function SbomExplorer() {
         {selectedImage && history && history.length > 0 && (
           <div className="bg-bg-secondary border border-border rounded-2xl overflow-hidden">
             <div className="px-5 py-3 border-b border-border flex items-center justify-between">
-              <span className="font-mono text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
+              <span className="font-mono text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">
                 Version History ({history.length})
               </span>
               {canDiff && (
-                <span className="text-[11px] text-accent font-medium">
+                <span className="text-caption text-accent font-medium">
                   {isDiffing ? 'Comparing...' : 'Comparing 2 versions'}
                 </span>
               )}
               {!canDiff && history.length > 1 && (
-                <span className="text-[11px] text-text-tertiary">Select 2 versions to compare</span>
+                <span className="text-caption text-text-tertiary">Select 2 versions to compare</span>
               )}
             </div>
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
                   <th className="px-5 py-2.5 w-10"></th>
-                  <th className="px-5 py-2.5 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Hash</th>
-                  <th className="px-5 py-2.5 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Format</th>
-                  <th className="px-5 py-2.5 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">First Seen</th>
-                  <th className="px-5 py-2.5 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Last Seen</th>
+                  <th className="px-5 py-2.5 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Hash</th>
+                  <th className="px-5 py-2.5 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Format</th>
+                  <th className="px-5 py-2.5 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">First Seen</th>
+                  <th className="px-5 py-2.5 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Last Seen</th>
                 </tr>
               </thead>
               <tbody>
@@ -148,21 +148,21 @@ export function SbomExplorer() {
                     >
                       <td className="px-5 py-2.5 text-center">
                         {label && (
-                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold bg-accent text-white">
+                          <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-micro font-bold bg-accent text-white">
                             {label}
                           </span>
                         )}
                       </td>
-                      <td className="px-5 py-2.5 font-mono text-[11px] text-text-secondary">
+                      <td className="px-5 py-2.5 font-mono text-caption text-text-secondary">
                         {entry.content_hash.substring(0, 12)}
                       </td>
                       <td className="px-5 py-2.5">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-bg-tertiary text-text-secondary border border-border">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-micro font-mono font-medium bg-bg-tertiary text-text-secondary border border-border">
                           {entry.format}
                         </span>
                       </td>
-                      <td className="px-5 py-2.5 text-[12px] text-text-secondary">{formatDate(entry.first_seen)}</td>
-                      <td className="px-5 py-2.5 text-[12px] text-text-secondary">{formatDate(entry.last_seen)}</td>
+                      <td className="px-5 py-2.5 text-xs text-text-secondary">{formatDate(entry.first_seen)}</td>
+                      <td className="px-5 py-2.5 text-xs text-text-secondary">{formatDate(entry.last_seen)}</td>
                     </tr>
                   );
                 })}
@@ -184,10 +184,10 @@ function DiffView({ diff }: { diff: SbomDiffResult }) {
     <div className="bg-bg-secondary border border-border rounded-2xl overflow-hidden animate-fade-up">
       <div className="px-5 py-3 border-b border-border flex items-center gap-3">
         <GitCompareArrows className="h-4 w-4 text-accent" />
-        <span className="font-mono text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
+        <span className="font-mono text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">
           Diff Result
         </span>
-        <div className="flex gap-3 ml-auto text-[11px]">
+        <div className="flex gap-3 ml-auto text-caption">
           {diff.added.length > 0 && (
             <span className="text-accent-mint font-medium">+{diff.added.length} added</span>
           )}
@@ -205,25 +205,25 @@ function DiffView({ diff }: { diff: SbomDiffResult }) {
         <div className="divide-y divide-border/50">
           {diff.added.map((pkg) => (
             <div key={`add-${pkg.name}`} className="flex items-center gap-3 px-5 py-2.5 bg-accent-mint/5">
-              <span className="text-[10px] font-bold text-accent-mint w-4">+</span>
-              <span className="font-mono text-[12px] text-text-primary">{pkg.name}</span>
-              <span className="font-mono text-[11px] text-text-secondary">{pkg.version}</span>
+              <span className="text-micro font-bold text-accent-mint w-4">+</span>
+              <span className="font-mono text-xs text-text-primary">{pkg.name}</span>
+              <span className="font-mono text-caption text-text-secondary">{pkg.version}</span>
             </div>
           ))}
           {diff.removed.map((pkg) => (
             <div key={`rem-${pkg.name}`} className="flex items-center gap-3 px-5 py-2.5 bg-severity-critical/5">
-              <span className="text-[10px] font-bold text-severity-critical w-4">-</span>
-              <span className="font-mono text-[12px] text-text-primary">{pkg.name}</span>
-              <span className="font-mono text-[11px] text-text-secondary">{pkg.version}</span>
+              <span className="text-micro font-bold text-severity-critical w-4">-</span>
+              <span className="font-mono text-xs text-text-primary">{pkg.name}</span>
+              <span className="font-mono text-caption text-text-secondary">{pkg.version}</span>
             </div>
           ))}
           {diff.changed.map((pkg) => (
             <div key={`chg-${pkg.name}`} className="flex items-center gap-3 px-5 py-2.5 bg-severity-medium/5">
-              <span className="text-[10px] font-bold text-severity-medium w-4">~</span>
-              <span className="font-mono text-[12px] text-text-primary">{pkg.name}</span>
-              <span className="font-mono text-[11px] text-severity-critical line-through">{pkg.old_version}</span>
+              <span className="text-micro font-bold text-severity-medium w-4">~</span>
+              <span className="font-mono text-xs text-text-primary">{pkg.name}</span>
+              <span className="font-mono text-caption text-severity-critical line-through">{pkg.old_version}</span>
               <span className="text-text-tertiary">{'→'}</span>
-              <span className="font-mono text-[11px] text-accent-mint">{pkg.new_version}</span>
+              <span className="font-mono text-caption text-accent-mint">{pkg.new_version}</span>
             </div>
           ))}
         </div>

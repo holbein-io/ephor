@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Vulnerability, TriagePreparation as TriagePreparationType } from '../../types';
 import { SEVERITY_COLORS } from '../../constants/colors';
 import { PriorityTierBadge } from '../PriorityTierBadge';
+import { ImageRef } from '../ImageRef';
 import { formatRelativeTime, debounce } from '../../utils';
 import { useInfiniteTriageVulnerabilities } from '../../hooks/useInfiniteTriageVulnerabilities';
 import { dashboardService } from '../../services/api';
@@ -46,7 +47,6 @@ export function TriagePreparation({
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Debounced search
   const debouncedSetSearch = useMemo(
     () => debounce((value: string) => setSearchFilter(value), 300),
     []
@@ -57,7 +57,6 @@ export function TriagePreparation({
     debouncedSetSearch(e.target.value);
   }, [debouncedSetSearch]);
 
-  // Build filters for the query
   const filters = useMemo(() => ({
     severity: selectedSeverities.length > 0 ? selectedSeverities : undefined,
     status: ['open'] as string[],
@@ -79,13 +78,11 @@ export function TriagePreparation({
     totalCount
   } = useInfiniteTriageVulnerabilities(filters);
 
-  // Fetch namespaces for filter
   const { data: namespaces } = useQuery({
     queryKey: ['dashboard-namespaces'],
     queryFn: () => dashboardService.getNamespaces()
   });
 
-  // Infinite scroll handler
   const handleScroll = useCallback(() => {
     if (!scrollContainerRef.current || !hasNextPage || isFetchingNextPage) return;
 
@@ -179,7 +176,6 @@ export function TriagePreparation({
             </div>
           </div>
 
-          {/* Severity toggle buttons */}
           <div className="flex gap-2 flex-wrap">
             {SEVERITIES.map(severity => {
               const color = getSeverityColor(severity);
@@ -199,7 +195,6 @@ export function TriagePreparation({
             })}
           </div>
 
-          {/* Search input */}
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-tertiary" />
             <Input
@@ -210,7 +205,6 @@ export function TriagePreparation({
             />
           </div>
 
-          {/* Expandable filters */}
           {showFilters && (
             <div className="grid grid-cols-3 gap-3 pt-2 border-t">
               <div>
@@ -310,7 +304,7 @@ export function TriagePreparation({
           <div
             ref={scrollContainerRef}
             className="space-y-4 overflow-y-auto"
-            style={{ maxHeight: maximized ? 'calc(100vh - 280px)' : '600px' }}
+            style={{ maxHeight: maximized ? 'calc(100vh - 17.5rem)' : 'calc(100vh - 28rem)', minHeight: '20rem' }}
           >
             {vulnerabilities.map((vuln: Vulnerability & { affected_workloads: number }) => {
               const added = isVulnerabilityAdded(vuln.id!);
@@ -321,7 +315,6 @@ export function TriagePreparation({
                   key={vuln.id}
                   className="border rounded-lg p-4 hover:shadow-sm transition-shadow"
                 >
-                  {/* Header */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-start gap-3 flex-1">
                       <Badge
@@ -335,7 +328,7 @@ export function TriagePreparation({
                           <h4 className="font-medium text-text-primary">
                             {vuln.cve_id}
                           </h4>
-                          <PriorityTierBadge tier={vuln.priority_tier} className="px-1.5 py-px text-[10.5px]" />
+                          <PriorityTierBadge tier={vuln.priority_tier} className="px-1.5 py-px text-micro" />
                           {vuln.primary_url && (
                             <a
                               href={vuln.primary_url}
@@ -354,7 +347,6 @@ export function TriagePreparation({
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex gap-2">
                       <Button
                         size="sm"
@@ -414,7 +406,6 @@ export function TriagePreparation({
                     </div>
                   </div>
 
-                  {/* Inline Notes Input */}
                   {notesInputVulnId === vuln.id && (
                     <div className="mt-3 p-3 bg-accent/10 border border-accent/30 rounded-lg">
                       <label className="block text-sm font-medium text-accent-hover mb-2">
@@ -445,7 +436,6 @@ export function TriagePreparation({
                     </div>
                   )}
 
-                  {/* Vulnerability Details */}
                   {vuln.title && (
                     <p className="text-sm text-text-secondary mb-2">{vuln.title}</p>
                   )}
@@ -455,7 +445,6 @@ export function TriagePreparation({
                     </p>
                   )}
 
-                  {/* Metadata */}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-tertiary">
                     <span>First detected: {formatRelativeTime(vuln.first_detected)}</span>
                     <span>Last seen: {formatRelativeTime(vuln.last_seen)}</span>
@@ -474,15 +463,15 @@ export function TriagePreparation({
                     )}
                   </div>
                   {vuln.image_names && (
-                    <p className="mt-1 text-xs text-text-tertiary truncate" title={vuln.image_names}>
-                      Images: {vuln.image_names}
-                    </p>
+                    <div className="mt-1 flex items-center gap-1.5 text-xs text-text-tertiary min-w-0">
+                      <span className="shrink-0">Images:</span>
+                      <ImageRef references={vuln.image_names} className="text-xs min-w-0" />
+                    </div>
                   )}
                 </div>
               );
             })}
 
-            {/* Infinite scroll footer */}
             {isFetchingNextPage && (
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="w-4 h-4 animate-spin text-text-tertiary mr-2" />

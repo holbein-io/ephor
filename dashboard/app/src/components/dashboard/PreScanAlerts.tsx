@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle } from 'lucide-react';
 import { sbomService } from '../../services/api';
 import { cn } from '../../utils';
+import { ImageRef } from '../ImageRef';
 
 const PREVIEW_LIMIT = 8;
 
@@ -53,7 +54,6 @@ export function PreScanAlerts() {
 
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-stretch">
-      {/* Headline count */}
       <div className="flex sm:flex-col items-center sm:items-start gap-3 sm:gap-2 sm:w-[150px] sm:flex-shrink-0 sm:border-r sm:border-border sm:pr-5">
         <div className="w-11 h-11 rounded-xl bg-severity-high/10 flex items-center justify-center flex-shrink-0">
           <AlertTriangle className="h-5 w-5 text-severity-high" />
@@ -62,13 +62,12 @@ export function PreScanAlerts() {
           <div className="font-mono text-3xl font-bold text-severity-high leading-none">
             {count}
           </div>
-          <div className="text-[11px] text-text-tertiary mt-1.5 leading-snug">
+          <div className="text-caption text-text-tertiary mt-1.5 leading-snug">
             potential CVEs detected before scan
           </div>
         </div>
       </div>
 
-      {/* Alert preview list */}
       <div className="flex-1 min-w-0">
         {isLoadingAlerts ? (
           <div className="flex items-center justify-center py-8">
@@ -82,7 +81,7 @@ export function PreScanAlerts() {
                 className="flex items-center gap-2.5 px-3 py-2 bg-bg-tertiary rounded-lg border border-transparent hover:border-border transition-colors"
               >
                 <span className={cn(
-                  'px-1.5 py-0.5 rounded font-bold text-[9px] flex-shrink-0 tracking-wide',
+                  'px-1.5 py-0.5 rounded font-bold text-micro flex-shrink-0 tracking-wide',
                   alert.severity === 'CRITICAL'
                     ? 'bg-severity-critical/15 text-severity-critical'
                     : 'bg-severity-high/15 text-severity-high'
@@ -94,12 +93,12 @@ export function PreScanAlerts() {
                     <span className="font-mono text-xs text-text-primary font-medium truncate">
                       {alert.cve_id}
                     </span>
-                    <span className="text-[11px] text-text-secondary truncate flex-shrink-0">
+                    <span className="text-caption text-text-secondary truncate flex-shrink-0">
                       {alert.package_name}
                     </span>
                   </div>
-                  <div className="font-mono text-[10px] text-text-tertiary truncate mt-0.5">
-                    {alert.image_reference}
+                  <div className="mt-0.5">
+                    <ImageRef references={alert.image_reference} showTag={false} className="text-micro w-full" />
                   </div>
                 </div>
               </div>
@@ -108,7 +107,7 @@ export function PreScanAlerts() {
         )}
 
         {remaining > 0 && (
-          <div className="mt-2.5 text-[11px] text-text-tertiary font-mono">
+          <div className="mt-2.5 text-caption text-text-tertiary font-mono">
             +{remaining} more {remaining === 1 ? 'alert' : 'alerts'}
           </div>
         )}

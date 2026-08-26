@@ -54,9 +54,44 @@
   --font-body: "DM Sans", system-ui, sans-serif;
   --font-mono: "Fira Code", monospace;
 
+  /* === Type scale ===
+     Fluid between a phone and a large desktop so a big display renders larger
+     text rather than the same 10px pinned in the middle of the screen. The
+     floor is 11px; nothing in a security table should read smaller. */
+  --text-micro: clamp(0.6875rem, 0.05vw + 0.66rem, 0.75rem);
+  --text-caption: clamp(0.75rem, 0.09vw + 0.71rem, 0.84375rem);
+  --text-xs: clamp(0.8125rem, 0.09vw + 0.77rem, 0.90625rem);
+  --text-sm: clamp(0.875rem, 0.11vw + 0.82rem, 1rem);
+  --text-base: clamp(1rem, 0.11vw + 0.95rem, 1.125rem);
+  --text-lg: clamp(1.125rem, 0.15vw + 1.05rem, 1.3125rem);
+  --text-xl: clamp(1.25rem, 0.2vw + 1.15rem, 1.5rem);
+  --text-2xl: clamp(1.5rem, 0.3vw + 1.35rem, 1.875rem);
+  --text-3xl: clamp(1.875rem, 0.4vw + 1.68rem, 2.375rem);
+  --text-4xl: clamp(2.25rem, 0.9vw + 1.8rem, 3rem);
+
   /* === Easing === */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-sine: cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+/* === App shell ===
+   One content column for every page. It widens on large displays rather than
+   pinning to a single authored width, so an ultrawide gains columns of data
+   instead of grey margin. */
+:root {
+  --content-max: 90rem;
+}
+@media (min-width: 96rem) {
+  :root { --content-max: 106rem; }
+}
+@media (min-width: 120rem) {
+  :root { --content-max: 122rem; }
+}
+
+.app-shell {
+  width: 100%;
+  max-width: var(--content-max);
+  margin-inline: auto;
 }
 
 @layer base {
@@ -143,20 +178,3 @@
 .delay-5 { animation-delay: 0.25s; }
 .delay-6 { animation-delay: 0.30s; }
 
-/* Responsive: bento grid collapses */
-@media (max-width: 1100px) {
-  .col-span-3,
-  .col-span-4,
-  .col-span-5 {
-    grid-column: span 6 !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .col-span-3,
-  .col-span-4,
-  .col-span-5,
-  .col-span-6 {
-    grid-column: span 12 !important;
-  }
-}

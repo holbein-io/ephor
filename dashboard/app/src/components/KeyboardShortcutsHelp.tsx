@@ -21,7 +21,6 @@ export function KeyboardShortcutsHelp({ groups }: KeyboardShortcutsHelpProps) {
 
   return (
     <>
-      {/* Trigger button */}
       <button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-4 right-4 p-3 bg-bg-tertiary text-text-primary rounded-full shadow-lg hover:bg-border-hover transition-colors z-40"
@@ -30,7 +29,6 @@ export function KeyboardShortcutsHelp({ groups }: KeyboardShortcutsHelpProps) {
         <Keyboard className="h-5 w-5" />
       </button>
 
-      {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-bg-card rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -79,7 +77,6 @@ export function KeyboardShortcutsHelp({ groups }: KeyboardShortcutsHelpProps) {
   );
 }
 
-// Simpler inline shortcut hint component
 export function ShortcutHint({ shortcut }: { shortcut: string }) {
   return (
     <kbd className="ml-2 px-1.5 py-0.5 text-xs font-mono text-text-tertiary bg-bg-tertiary border border-border rounded">

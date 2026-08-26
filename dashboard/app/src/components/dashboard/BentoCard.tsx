@@ -10,12 +10,12 @@ interface BentoCardProps {
 }
 
 const spanClasses: Record<number, string> = {
-  3: 'col-span-3',
-  4: 'col-span-4',
-  5: 'col-span-5',
-  6: 'col-span-6',
-  7: 'col-span-7',
-  8: 'col-span-8',
+  3: 'col-span-12 md:col-span-6 lg:col-span-3',
+  4: 'col-span-12 md:col-span-6 lg:col-span-4',
+  5: 'col-span-12 md:col-span-6 lg:col-span-5',
+  6: 'col-span-12 md:col-span-6',
+  7: 'col-span-12 lg:col-span-7',
+  8: 'col-span-12 lg:col-span-8',
   12: 'col-span-12',
 };
 
@@ -29,13 +29,13 @@ export function BentoCard({ title, action, span = 4, className, children }: Bent
       )}
     >
       <div className="flex items-center justify-between px-[22px] pt-[18px] mb-3.5">
-        <span className="font-mono text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
+        <span className="font-mono text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">
           {title}
         </span>
         {action && (
           <Link
             to={action.href}
-            className="font-mono text-[11px] font-semibold text-accent hover:underline"
+            className="font-mono text-caption font-semibold text-accent hover:underline"
           >
             {action.label}
           </Link>

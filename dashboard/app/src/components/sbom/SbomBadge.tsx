@@ -15,7 +15,7 @@ export function SbomBadge({ imageReference }: SbomBadgeProps) {
 
   if (isLoading) {
     return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono bg-bg-tertiary text-text-tertiary animate-pulse">
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-micro font-mono bg-bg-tertiary text-text-tertiary animate-pulse">
         SBOM
       </span>
     );
@@ -26,7 +26,7 @@ export function SbomBadge({ imageReference }: SbomBadgeProps) {
   }
 
   return (
-    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-accent-mint/10 text-accent-mint border border-accent-mint/20">
+    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-micro font-mono font-medium bg-accent-mint/10 text-accent-mint border border-accent-mint/20">
       <FileText className="h-3 w-3" />
       <span>{metadata.format.toUpperCase()}</span>
       <span className="text-accent-mint/60">{metadata.package_count} pkg</span>

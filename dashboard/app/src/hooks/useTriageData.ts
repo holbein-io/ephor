@@ -2,7 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { triageService } from '../services/api';
 import { TriageSession } from '../types';
 
-// Hook for managing triage sessions
 export function useTriageSessions() {
   return useQuery({
     queryKey: ['enhanced-triage-sessions'],
@@ -10,7 +9,6 @@ export function useTriageSessions() {
   });
 }
 
-// Hook for fetching preparations for a session
 export function useTriagePreparations(sessionId: number | undefined, enabled = false) {
   return useQuery({
     queryKey: ['triage-preparations', sessionId],
@@ -19,7 +17,6 @@ export function useTriagePreparations(sessionId: number | undefined, enabled = f
   });
 }
 
-// Hook for fetching bulk plans for a session
 export function useTriageBulkPlans(sessionId: number | undefined) {
   return useQuery({
     queryKey: ['triage-bulk-plans', sessionId],
@@ -28,7 +25,6 @@ export function useTriageBulkPlans(sessionId: number | undefined) {
   });
 }
 
-// Hook for fetching session metrics
 export function useTriageSessionMetrics(sessionId: number | undefined, enabled = false) {
   return useQuery({
     queryKey: ['triage-session-metrics', sessionId],
@@ -37,7 +33,6 @@ export function useTriageSessionMetrics(sessionId: number | undefined, enabled =
   });
 }
 
-// Hook for creating a new triage session
 export function useCreateTriageSession(onSessionCreated?: (session: TriageSession) => void) {
   const queryClient = useQueryClient();
 
@@ -69,7 +64,6 @@ export function useCreateTriageSession(onSessionCreated?: (session: TriageSessio
   });
 }
 
-// Hook for updating session status
 export function useUpdateSessionStatus(currentSessionId?: number, onStatusUpdated?: (session: TriageSession) => void) {
   const queryClient = useQueryClient();
 
@@ -88,7 +82,6 @@ export function useUpdateSessionStatus(currentSessionId?: number, onStatusUpdate
   });
 }
 
-// Hook for creating a preparation entry
 export function useCreateTriagePreparation() {
   const queryClient = useQueryClient();
 
@@ -107,7 +100,6 @@ export function useCreateTriagePreparation() {
   });
 }
 
-// Hook for deleting a preparation entry
 export function useDeleteTriagePreparation() {
   const queryClient = useQueryClient();
 
@@ -119,7 +111,6 @@ export function useDeleteTriagePreparation() {
   });
 }
 
-// Hook for creating a bulk plan
 export function useCreateTriageBulkPlan() {
   const queryClient = useQueryClient();
 
@@ -139,7 +130,6 @@ export function useCreateTriageBulkPlan() {
   });
 }
 
-// Hook for executing a bulk plan
 export function useExecuteBulkPlan() {
   const queryClient = useQueryClient();
 
@@ -153,7 +143,6 @@ export function useExecuteBulkPlan() {
   });
 }
 
-// Hook for creating triage decisions
 export function useCreateTriageDecision() {
   const queryClient = useQueryClient();
 
@@ -175,7 +164,6 @@ export function useCreateTriageDecision() {
   });
 }
 
-// Hook for fetching triage decisions for a session
 export function useTriageDecisions(sessionId: number | undefined) {
   return useQuery({
     queryKey: ['triage-decisions', sessionId],

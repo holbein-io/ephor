@@ -24,7 +24,6 @@ interface TriageDecision {
   title?: string;
   fixed_version?: string;
   affected_workloads?: number;
-  // Remediation reference
   remediation_id?: number;
   remediation_status?: string;
   remediation_priority?: string;
@@ -77,7 +76,6 @@ export function TriageSessionReview({
   const acceptedRiskCount = decisions?.filter(d => d.status === 'accepted_risk').length || 0;
   const falsePositiveCount = decisions?.filter(d => d.status === 'false_positive').length || 0;
 
-  // Group decisions by status for organized display
   const groupedDecisions = {
     needs_remediation: decisions?.filter(d => d.status === 'needs_remediation') || [],
     accepted_risk: decisions?.filter(d => d.status === 'accepted_risk') || [],
@@ -86,7 +84,6 @@ export function TriageSessionReview({
 
   return (
     <div className="space-y-6">
-      {/* Summary Stats */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -116,7 +113,6 @@ export function TriageSessionReview({
         </CardContent>
       </Card>
 
-      {/* Decisions by Status */}
       {Object.entries(groupedDecisions).map(([status, statusDecisions]) => {
         if (statusDecisions.length === 0) return null;
 
@@ -141,12 +137,10 @@ export function TriageSessionReview({
             <CardContent>
               <div className="space-y-4">
                 {statusDecisions.map((decision) => {
-                  // Find matching preparation for additional context
                   const preparation = preparations?.find(p => p.vulnerability_id === decision.vulnerability_id);
 
                   return (
                     <div key={decision.id} className="border rounded-lg p-4 space-y-3">
-                      {/* Vulnerability Info */}
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
                           <Badge
@@ -185,7 +179,6 @@ export function TriageSessionReview({
                         <p className="text-sm text-text-secondary">{decision.title}</p>
                       )}
 
-                      {/* Decision Details */}
                       {decision.status === 'needs_remediation' && (
                         <div className="bg-success/10 border border-success/30 rounded p-3 space-y-2">
                           <div className="flex items-center gap-2 mb-2">
@@ -249,7 +242,6 @@ export function TriageSessionReview({
                         </div>
                       )}
 
-                      {/* Notes */}
                       {decision.notes && (
                         <div className="bg-accent/10 border border-accent/30 rounded p-3">
                           <div className="flex items-start gap-2">
@@ -262,7 +254,6 @@ export function TriageSessionReview({
                         </div>
                       )}
 
-                      {/* Preparation Notes if available */}
                       {preparation?.prep_notes && (
                         <div className="bg-bg-secondary border border-border rounded p-3">
                           <div className="flex items-start gap-2">
@@ -283,7 +274,6 @@ export function TriageSessionReview({
         );
       })}
 
-      {/* No Decisions Message */}
       {(!decisions || decisions.length === 0) && (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
