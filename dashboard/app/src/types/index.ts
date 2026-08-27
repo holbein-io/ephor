@@ -21,10 +21,12 @@ export interface Vulnerability {
   references?: string[];
   cvss_v3_vector?: string;
   cvss_v3_score?: number;
+  // KEV/EPSS exploitation enrichment (ADR-004); absent until the feeds have run.
   kev_listed?: boolean;
   kev_date_added?: string;
   epss_score?: number;
   epss_percentile?: number;
+  // Derived priority tier "P0".."P3" (ADR-004 Phase 2); present on list rows.
   priority_tier?: string;
   first_detected: string;
   last_seen: string;
@@ -139,6 +141,7 @@ export interface VulnerabilityFilters {
   limit?: number;
   sort_by?: 'severity' | 'first_detected' | 'last_seen' | 'cve_id' | 'priority' | 'epss';
   sort_order?: 'asc' | 'desc';
+  // Exploitation filters (ADR-004 Phase 2).
   kev_only?: boolean;
   deployed_only?: boolean;
   fixable_only?: boolean;
