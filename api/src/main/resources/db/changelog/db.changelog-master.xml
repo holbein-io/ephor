@@ -53,4 +53,11 @@
                  stripComments="false"/>
     </changeSet>
 
+    <changeSet id="008-scan-ingestion-hardening" author="ephor">
+        <sqlFile path="008_scan_ingestion_hardening.sql"
+                 relativeToChangelogFile="true"
+                 splitStatements="false"
+                 stripComments="false"/>
+    </changeSet>
+
 </databaseChangeLog>
