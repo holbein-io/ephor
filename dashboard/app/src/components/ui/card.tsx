@@ -25,7 +25,7 @@ function CardTitle({ className, ref, ...props }: HTMLAttributes<HTMLDivElement> 
   return (
     <div
       ref={ref}
-      className={cn('font-mono text-[10px] font-medium tracking-[0.12em] uppercase text-text-tertiary', className)}
+      className={cn('font-mono text-micro font-medium tracking-[0.12em] uppercase text-text-tertiary', className)}
       {...props}
     />
   );

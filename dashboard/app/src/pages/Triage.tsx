@@ -131,7 +131,6 @@ export function Triage() {
 
   return (
     <div className="-mx-6 -mt-7 flex" style={{ height: 'calc(100vh - 56px)' }}>
-      {/* Session Panel (sidebar) */}
       {!prepMaximized && (
         <TriageSessionManager
           sessions={sessions as any}
@@ -142,11 +141,9 @@ export function Triage() {
         />
       )}
 
-      {/* Main Content */}
       <main className="flex-1 overflow-y-auto px-7 py-6 flex flex-col gap-4">
         {state.currentSession ? (
           <>
-            {/* Action buttons */}
             <div className="flex items-center justify-between">
               <h2 className="font-display text-xl italic text-text-primary">
                 Triage Session
@@ -173,14 +170,12 @@ export function Triage() {
               </div>
             </div>
 
-            {/* Stepper */}
             <TriageWorkflowStepper
               currentStatus={state.currentSession.status}
               preparationsCount={prepCount}
               decisionsCount={decCount}
             />
 
-            {/* Stats Row */}
             <div className="grid grid-cols-3 gap-2.5 animate-fade-up delay-2">
               {[
                 { label: 'Prepared', value: prepCount, color: 'text-text-primary' },
@@ -188,13 +183,12 @@ export function Triage() {
                 { label: 'Remaining', value: remaining, color: 'text-accent' },
               ].map(stat => (
                 <div key={stat.label} className="bg-bg-secondary border border-border rounded-2xl px-[18px] py-3.5">
-                  <div className="font-mono text-[11px] tracking-[0.06em] uppercase text-text-tertiary mb-1">{stat.label}</div>
-                  <div className={`text-[22px] font-semibold leading-none ${stat.color}`}>{stat.value}</div>
+                  <div className="font-mono text-caption tracking-[0.06em] uppercase text-text-tertiary mb-1">{stat.label}</div>
+                  <div className={`text-2xl font-semibold leading-none ${stat.color}`}>{stat.value}</div>
                 </div>
               ))}
             </div>
 
-            {/* Phase Content */}
             {state.currentSession.status === 'PREPARING' && (
               <TriagePreparation
                 preparations={preparations as any}

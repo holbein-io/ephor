@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { Layout } from './components/Layout';
+import { TooltipProvider } from './components/ui/tooltip';
 import { Dashboard } from './pages/Dashboard';
 import { Vulnerabilities } from './pages/Vulnerabilities';
 import { VulnerabilityDetail } from './pages/VulnerabilityDetail';
@@ -26,6 +27,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ReactQueryDevtools initialIsOpen={false} />
+      <TooltipProvider delayDuration={150} skipDelayDuration={300}>
       <UserProvider>
         <UserDirectoryProvider>
         <VulnerabilityListProvider>
@@ -45,6 +47,7 @@ function App() {
         </VulnerabilityListProvider>
         </UserDirectoryProvider>
       </UserProvider>
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

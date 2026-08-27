@@ -52,7 +52,7 @@ export function LicenseAudit() {
   return (
     <div className="space-y-4">
       <div className="bg-bg-secondary border border-border rounded-2xl p-5">
-        <span className="font-mono text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
+        <span className="font-mono text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">
           License Distribution
         </span>
         <div className="mt-4 h-[250px]">
@@ -88,7 +88,7 @@ export function LicenseAudit() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-        <div className="flex items-center gap-4 mt-2 text-[11px] text-text-tertiary">
+        <div className="flex items-center gap-4 mt-2 text-caption text-text-tertiary">
           <span className="flex items-center gap-1.5">
             <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--color-accent)' }} />
             Permissive
@@ -104,9 +104,9 @@ export function LicenseAudit() {
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
-              <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">License</th>
-              <th className="px-5 py-3 text-right text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Packages</th>
-              <th className="px-5 py-3 text-right text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Images</th>
+              <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">License</th>
+              <th className="px-5 py-3 text-right text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Packages</th>
+              <th className="px-5 py-3 text-right text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Images</th>
               <th className="px-5 py-3 w-8"></th>
             </tr>
           </thead>
@@ -120,19 +120,19 @@ export function LicenseAudit() {
                 }`}
               >
                 <td className="px-5 py-3.5">
-                  <span className="font-mono text-[13px] font-medium text-text-primary">
+                  <span className="font-mono text-sm font-medium text-text-primary">
                     {entry.license}
                   </span>
                   {isCopyleft(entry.license) && (
-                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-severity-high/10 text-severity-high border border-severity-high/20">
+                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-micro font-bold bg-severity-high/10 text-severity-high border border-severity-high/20">
                       COPYLEFT
                     </span>
                   )}
                 </td>
-                <td className="px-5 py-3.5 text-right font-mono text-[13px] text-text-secondary">
+                <td className="px-5 py-3.5 text-right font-mono text-sm text-text-secondary">
                   {entry.package_count}
                 </td>
-                <td className="px-5 py-3.5 text-right font-mono text-[13px] text-text-secondary">
+                <td className="px-5 py-3.5 text-right font-mono text-sm text-text-secondary">
                   {entry.image_count}
                 </td>
                 <td className="px-5 py-3.5">
@@ -149,24 +149,24 @@ export function LicenseAudit() {
       {selectedLicense && licensePackages?.content && (
         <div className="bg-bg-secondary border border-accent/20 rounded-2xl overflow-hidden animate-fade-up">
           <div className="px-5 py-3 border-b border-border">
-            <span className="font-mono text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
+            <span className="font-mono text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">
               Packages with license: {selectedLicense}
             </span>
           </div>
           <table className="w-full">
             <thead>
               <tr className="border-b border-border">
-                <th className="px-5 py-2.5 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Package</th>
-                <th className="px-5 py-2.5 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Version</th>
-                <th className="px-5 py-2.5 text-right text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Images</th>
+                <th className="px-5 py-2.5 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Package</th>
+                <th className="px-5 py-2.5 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Version</th>
+                <th className="px-5 py-2.5 text-right text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Images</th>
               </tr>
             </thead>
             <tbody>
               {licensePackages.content.map((pkg, i) => (
                 <tr key={`${pkg.name}-${pkg.version}-${i}`} className="border-b border-border/50 last:border-b-0">
-                  <td className="px-5 py-2.5 font-mono text-[12px] text-text-primary">{pkg.name}</td>
-                  <td className="px-5 py-2.5 font-mono text-[12px] text-text-secondary">{pkg.version}</td>
-                  <td className="px-5 py-2.5 text-right font-mono text-[12px] text-text-secondary">{pkg.image_count}</td>
+                  <td className="px-5 py-2.5 font-mono text-xs text-text-primary">{pkg.name}</td>
+                  <td className="px-5 py-2.5 font-mono text-xs text-text-secondary">{pkg.version}</td>
+                  <td className="px-5 py-2.5 text-right font-mono text-xs text-text-secondary">{pkg.image_count}</td>
                 </tr>
               ))}
             </tbody>

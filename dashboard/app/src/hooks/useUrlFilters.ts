@@ -4,8 +4,6 @@ import { VulnerabilityFilters } from '../types';
 
 const DEFAULT_FILTERS: VulnerabilityFilters = {
   status: ['open', 'triaged'],
-  page: 1,
-  limit: 25,
   sort_by: 'priority',
   sort_order: 'desc'
 };
@@ -24,8 +22,6 @@ export function useUrlFilters() {
     const scanner_type = searchParams.get('scanner_type');
     const search = searchParams.get('search');
     const workload = searchParams.get('workload');
-    const page = searchParams.get('page');
-    const limit = searchParams.get('limit');
     const sort_by = searchParams.get('sort_by');
     const sort_order = searchParams.get('sort_order');
     const kev_only = searchParams.get('kev_only');
@@ -40,8 +36,6 @@ export function useUrlFilters() {
       scanner_type: scanner_type || undefined,
       search: search || undefined,
       workload: workload ? parseInt(workload, 10) : undefined,
-      page: page ? parseInt(page, 10) : DEFAULT_FILTERS.page,
-      limit: limit ? parseInt(limit, 10) : DEFAULT_FILTERS.limit,
       sort_by: (sort_by as VulnerabilityFilters['sort_by']) || DEFAULT_FILTERS.sort_by,
       sort_order: (sort_order as VulnerabilityFilters['sort_order']) || DEFAULT_FILTERS.sort_order,
       kev_only: kev_only === 'true' || undefined,
@@ -77,12 +71,6 @@ export function useUrlFilters() {
     if (newFilters.workload) {
       params.set('workload', String(newFilters.workload));
     }
-    if (newFilters.page && newFilters.page !== DEFAULT_FILTERS.page) {
-      params.set('page', String(newFilters.page));
-    }
-    if (newFilters.limit && newFilters.limit !== DEFAULT_FILTERS.limit) {
-      params.set('limit', String(newFilters.limit));
-    }
     if (newFilters.sort_by && newFilters.sort_by !== DEFAULT_FILTERS.sort_by) {
       params.set('sort_by', newFilters.sort_by);
     }
@@ -113,15 +101,9 @@ export function useUrlFilters() {
     key: K,
     value: VulnerabilityFilters[K]
   ) => {
-    setFilters({
-      ...filters,
-      [key]: value,
-      // Reset to page 1 when changing filters (except when changing page itself)
-      page: key === 'page' ? (value as number) : 1
-    });
+    setFilters({ ...filters, [key]: value });
   }, [filters, setFilters]);
 
-  // Check if any non-default filters are active
   const hasActiveFilters = useMemo(() => {
     return !!(
       filters.search ||
@@ -137,7 +119,6 @@ export function useUrlFilters() {
     );
   }, [filters]);
 
-  // Get list of active filter labels for display
   const activeFilterLabels = useMemo(() => {
     const labels: Array<{ key: keyof VulnerabilityFilters; label: string; value: string }> = [];
 
@@ -184,7 +165,6 @@ export function useUrlFilters() {
       delete newFilters[key];
     }
 
-    newFilters.page = 1;
     setFilters(newFilters);
   }, [filters, setFilters]);
 

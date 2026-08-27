@@ -213,7 +213,6 @@ export interface TriageReport {
   };
 }
 
-// Enhanced Triage System Types
 export interface TriagePreparation {
   id?: number;
   session_id: number;

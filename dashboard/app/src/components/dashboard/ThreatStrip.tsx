@@ -54,19 +54,19 @@ export function ThreatStrip({ metrics }: ThreatStripProps) {
       style={{ background: 'linear-gradient(135deg, var(--color-bg-secondary) 0%, rgba(232,97,58,0.04) 100%)' }}
     >
       <div className="flex flex-col gap-4">
-        <span className="text-[10px] font-bold tracking-[0.14em] uppercase text-text-tertiary">
+        <span className="text-micro font-bold tracking-[0.14em] uppercase text-text-tertiary">
           Priority Worklist
         </span>
 
         <div className="flex items-baseline gap-3">
           <span
-            className="font-mono text-[44px] font-medium leading-none animate-count-up shrink-0"
+            className="font-mono text-4xl font-medium leading-none animate-count-up shrink-0"
             style={{ color: actionNow > 0 ? 'var(--color-severity-critical)' : 'var(--color-accent-mint)' }}
           >
             {actionNow.toLocaleString()}
           </span>
-          <span className="text-[15px] text-text-secondary whitespace-nowrap">
-            {actionNow === 1 ? 'CVE needs action now' : 'CVEs need action now'}
+          <span className="text-base text-text-secondary whitespace-nowrap">
+            {actionNow === 1 ? 'finding needs action now' : 'findings need action now'}
           </span>
         </div>
 
@@ -75,7 +75,7 @@ export function ThreatStrip({ metrics }: ThreatStripProps) {
             <span
               key={t.key}
               title={PRIORITY_TIER_COLORS[t.key].title}
-              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-[12px] font-mono"
+              className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-mono"
               style={{ borderColor: 'var(--color-border)' }}
             >
               <span className="font-semibold" style={{ color: t.color }}>{t.key}</span>
@@ -84,7 +84,7 @@ export function ThreatStrip({ metrics }: ThreatStripProps) {
           ))}
         </div>
 
-        <p className="flex items-center gap-2 text-[13px] text-text-secondary">
+        <p className="flex items-center gap-2 text-sm text-text-secondary">
           <span>
             total backlog{' '}
             <span className="font-mono font-medium text-text-primary">{backlog.toLocaleString()}</span>
@@ -100,7 +100,7 @@ export function ThreatStrip({ metrics }: ThreatStripProps) {
 
       <Link
         to="/vulnerabilities"
-        className="shrink-0 px-5 py-2.5 rounded-[10px] text-[13px] font-semibold bg-accent text-white shadow-[0_4px_20px_rgba(232,97,58,0.25)] hover:shadow-[0_6px_28px_rgba(232,97,58,0.4)] hover:-translate-y-px transition-all no-underline"
+        className="shrink-0 px-5 py-2.5 rounded-[10px] text-sm font-semibold bg-accent text-white shadow-[0_4px_20px_rgba(232,97,58,0.25)] hover:shadow-[0_6px_28px_rgba(232,97,58,0.4)] hover:-translate-y-px transition-all no-underline"
       >
         View worklist
       </Link>

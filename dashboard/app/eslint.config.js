@@ -25,7 +25,19 @@ export default tseslint.config(
       // React specific rules
       'react-hooks/exhaustive-deps': 'warn',
       'react-hooks/rules-of-hooks': 'error',
-      'react-refresh/only-export-components': 'warn'
+      'react-refresh/only-export-components': 'warn',
+      // Type sizes come from the scale in index.css, not from pixel literals.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/text-\\[[0-9.]+px\\]/]',
+          message: 'Use a type scale step (text-micro, text-caption, text-xs, text-sm, text-base, text-lg, text-xl, text-2xl, text-3xl, text-4xl) instead of a pixel literal.'
+        },
+        {
+          selector: 'TemplateElement[value.raw=/text-\\[[0-9.]+px\\]/]',
+          message: 'Use a type scale step (text-micro, text-caption, text-xs, text-sm, text-base, text-lg, text-xl, text-2xl, text-3xl, text-4xl) instead of a pixel literal.'
+        }
+      ]
     },
     languageOptions: {
       parser: tseslint.parser,

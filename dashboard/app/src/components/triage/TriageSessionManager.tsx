@@ -35,7 +35,7 @@ export function TriageSessionManager({
   return (
     <aside className="w-[280px] flex-shrink-0 bg-bg-tertiary border-r border-border-subtle flex flex-col overflow-y-auto">
       <div className="flex items-center justify-between px-4 py-4 border-b border-border-subtle">
-        <span className="font-mono text-[10px] font-medium tracking-[0.08em] uppercase text-text-tertiary">
+        <span className="font-mono text-micro font-medium tracking-[0.08em] uppercase text-text-tertiary">
           Triage Sessions
         </span>
         <button
@@ -73,14 +73,14 @@ export function TriageSessionManager({
                 style={{ animationDelay: `${i * 0.05}s` }}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[13px] font-medium text-text-primary">
+                  <span className="text-sm font-medium text-text-primary">
                     {formatDateOnly(session.session_date)}
                   </span>
-                  <span className={cn('text-[10px] font-semibold tracking-wider uppercase px-[7px] py-0.5 rounded-full border', badgeStyle)}>
+                  <span className={cn('text-micro font-semibold tracking-wider uppercase px-[7px] py-0.5 rounded-full border', badgeStyle)}>
                     {label}
                   </span>
                 </div>
-                <div className="text-[11px] text-text-secondary font-mono">
+                <div className="text-caption text-text-secondary font-mono">
                   {session.preparations_count || 0} reviewed / {session.decisions_count || 0} decided
                 </div>
               </div>

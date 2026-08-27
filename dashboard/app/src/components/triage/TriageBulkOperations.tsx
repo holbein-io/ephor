@@ -133,7 +133,6 @@ export function TriageBulkOperations({
         </div>
       </CardHeader>
       <CardContent>
-        {/* Create Form */}
         {showCreateForm && (
           <div className="border rounded-lg p-4 mb-4 bg-bg-secondary">
             <h3 className="font-medium mb-3">Create Bulk Plan</h3>
@@ -255,7 +254,6 @@ export function TriageBulkOperations({
           </div>
         )}
 
-        {/* Plans List */}
         {!bulkPlans || bulkPlans.length === 0 ? (
           <div className="text-center py-8 text-text-tertiary">
             <p>No bulk plans created yet.</p>
@@ -299,7 +297,6 @@ export function TriageBulkOperations({
                         )}
                       </div>
 
-                      {/* Expandable Filters */}
                       {plan.filters && (
                         <button
                           onClick={() => togglePlanExpanded(plan.id!)}

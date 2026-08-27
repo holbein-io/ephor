@@ -10,7 +10,6 @@ interface FilterPreset {
   isBuiltIn?: boolean;
 }
 
-// Built-in presets that are always available
 const BUILT_IN_PRESETS: FilterPreset[] = [
   {
     id: 'critical-unfixed',
@@ -120,12 +119,9 @@ export function FilterPresets({ currentFilters, onApplyPreset }: FilterPresetsPr
 
       {isOpen && (
         <>
-          {/* Backdrop */}
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
 
-          {/* Dropdown */}
           <div className="absolute top-full mt-1 left-0 z-50 w-64 bg-bg-card rounded-lg shadow-xl border border-border py-2">
-            {/* Built-in presets */}
             <div className="px-3 py-1.5">
               <p className="text-xs font-semibold text-text-tertiary uppercase tracking-wider">Quick Filters</p>
             </div>
@@ -140,7 +136,6 @@ export function FilterPresets({ currentFilters, onApplyPreset }: FilterPresetsPr
               </button>
             ))}
 
-            {/* Custom presets */}
             {customPresets.length > 0 && (
               <>
                 <div className="border-t border-border-subtle my-2" />
@@ -171,7 +166,6 @@ export function FilterPresets({ currentFilters, onApplyPreset }: FilterPresetsPr
               </>
             )}
 
-            {/* Save current filters */}
             <div className="border-t border-border-subtle mt-2 pt-2">
               {showSaveDialog ? (
                 <div className="px-3 py-2">

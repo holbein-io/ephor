@@ -23,10 +23,8 @@ class ApiClient {
   }
 
   private setupInterceptors(): void {
-    // Request interceptor for auth token (if needed in future)
     this.instance.interceptors.request.use(
       (config) => {
-        // Add auth token if available
         const token = localStorage.getItem('authToken');
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
@@ -36,7 +34,6 @@ class ApiClient {
       (error) => Promise.reject(error)
     );
 
-    // Response interceptor for error handling
     this.instance.interceptors.response.use(
       (response) => {
         if (import.meta.env.DEV) {
@@ -45,14 +42,11 @@ class ApiClient {
         return response.data;
       },
       (error: AxiosError) => {
-        // Centralized error handling
         if (error.response) {
-          // Server responded with error status
           const message = (error.response.data as any)?.message || error.message;
 
           switch (error.response.status) {
             case 401:
-              // Unauthorized - redirect to login if needed
               console.error('Unauthorized access');
               break;
             case 404:
@@ -65,10 +59,8 @@ class ApiClient {
               console.error('API error:', message);
           }
         } else if (error.request) {
-          // Request was made but no response
           console.error('Network error - no response received');
         } else {
-          // Error in request setup
           console.error('Request error:', error.message);
         }
 
@@ -98,5 +90,4 @@ class ApiClient {
   }
 }
 
-// Export singleton instance
 export const apiClient = new ApiClient();

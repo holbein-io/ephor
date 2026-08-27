@@ -76,7 +76,7 @@ export function PriorityHeatmap({ maxNamespaces = 6 }: PriorityHeatmapProps) {
 
   return (
     <div
-      className="grid gap-[3px] text-[11px]"
+      className="grid gap-[3px] text-caption"
       style={{ gridTemplateColumns: '120px repeat(3, 1fr)' }}
     >
       <div />
@@ -84,7 +84,7 @@ export function PriorityHeatmap({ maxNamespaces = 6 }: PriorityHeatmapProps) {
         <div
           key={tier}
           title={PRIORITY_TIER_COLORS[TIER_LABELS[tier]].title}
-          className="font-mono font-semibold text-text-tertiary uppercase tracking-wide text-[10px] px-2 py-1.5"
+          className="font-mono font-semibold text-text-tertiary uppercase tracking-wide text-micro px-2 py-1.5"
         >
           {TIER_LABELS[tier]}
         </div>
@@ -92,7 +92,7 @@ export function PriorityHeatmap({ maxNamespaces = 6 }: PriorityHeatmapProps) {
 
       {processedData.map(ns => (
         <div key={ns.namespace} className="contents">
-          <div className="font-mono text-text-secondary text-[11px] px-2 py-2 flex items-center border-r border-border-subtle truncate">
+          <div className="font-mono text-text-secondary text-caption px-2 py-2 flex items-center border-r border-border-subtle truncate">
             {ns.namespace}
           </div>
           {TIERS.map(tier => {

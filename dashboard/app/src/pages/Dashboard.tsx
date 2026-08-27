@@ -24,9 +24,9 @@ export function Dashboard() {
         <div className="h-[120px] bg-bg-secondary rounded-2xl" />
         <div className="h-16 bg-bg-secondary rounded-2xl" />
         <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-3 h-64 bg-bg-secondary rounded-2xl" />
-          <div className="col-span-5 h-64 bg-bg-secondary rounded-2xl" />
-          <div className="col-span-4 h-64 bg-bg-secondary rounded-2xl" />
+          <div className="col-span-12 md:col-span-6 lg:col-span-3 h-64 bg-bg-secondary rounded-2xl" />
+          <div className="col-span-12 md:col-span-6 lg:col-span-5 h-64 bg-bg-secondary rounded-2xl" />
+          <div className="col-span-12 md:col-span-6 lg:col-span-4 h-64 bg-bg-secondary rounded-2xl" />
         </div>
       </div>
     );
@@ -40,10 +40,10 @@ export function Dashboard() {
   ];
 
   return (
-    <div className="-mx-6 -mt-7">
+    <div className="space-y-4">
       <ThreatStrip metrics={metrics} />
 
-      <div className="px-8 py-7 max-w-[1440px] mx-auto space-y-4">
+      <div className="space-y-4">
         <div className="grid grid-cols-12 gap-4">
           <SeverityMegaStrip
             severity={metrics.by_severity}

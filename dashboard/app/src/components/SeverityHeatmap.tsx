@@ -86,14 +86,14 @@ export function SeverityHeatmap({ maxNamespaces = 6 }: SeverityHeatmapProps) {
 
   return (
     <div
-      className="grid gap-[3px] text-[11px]"
+      className="grid gap-[3px] text-caption"
       style={{ gridTemplateColumns: '120px repeat(4, 1fr)' }}
     >
       <div />
       {SEVERITY_LEVELS.map(sev => (
         <div
           key={sev}
-          className="font-mono font-semibold text-text-tertiary uppercase tracking-wide text-[10px] px-2 py-1.5"
+          className="font-mono font-semibold text-text-tertiary uppercase tracking-wide text-micro px-2 py-1.5"
         >
           {SEVERITY_LABELS[sev]}
         </div>
@@ -101,7 +101,7 @@ export function SeverityHeatmap({ maxNamespaces = 6 }: SeverityHeatmapProps) {
 
       {processedData.map(ns => (
         <div key={ns.namespace} className="contents">
-          <div className="font-mono text-text-secondary text-[11px] px-2 py-2 flex items-center border-r border-border-subtle truncate">
+          <div className="font-mono text-text-secondary text-caption px-2 py-2 flex items-center border-r border-border-subtle truncate">
             {ns.namespace}
           </div>
           {SEVERITY_LEVELS.map(severity => {

@@ -7,6 +7,7 @@ import { sbomService } from '../services/api';
 import { LicenseAudit } from '../components/sbom/LicenseAudit';
 import { SbomExplorer } from '../components/sbom/SbomExplorer';
 import { PreScanAlertsList } from '../components/sbom/PreScanAlertsList';
+import { ImageRef } from '../components/ImageRef';
 import { cn } from '../utils';
 
 type Tab = 'packages' | 'licenses' | 'sboms' | 'prescan';
@@ -26,7 +27,7 @@ export function Inventory() {
   const setActiveTab = (key: Tab) => setSearchParams(key === 'packages' ? {} : { tab: key });
 
   return (
-    <div className="space-y-3 max-w-[1400px] mx-auto">
+    <div className="space-y-3">
       <div className="flex items-start justify-between animate-fade-up">
         <h1 className="font-display text-2xl italic text-text-primary tracking-tight">
           Software Inventory
@@ -39,7 +40,7 @@ export function Inventory() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={cn(
-              'px-4 py-2 rounded-lg text-[13px] font-medium transition-all',
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all',
               activeTab === tab.key
                 ? 'text-accent bg-accent-dim'
                 : 'text-text-secondary hover:text-text-primary hover:bg-bg-hover'
@@ -94,7 +95,7 @@ function PackageSearch() {
   return (
     <>
       {totalElements !== undefined && (
-        <p className="text-[13px] text-text-secondary -mt-1">
+        <p className="text-sm text-text-secondary -mt-1">
           {showSearch
             ? `${totalElements.toLocaleString()} packages matching "${searchQuery}"`
             : `Top ${results?.length || 0} packages across fleet`}
@@ -109,7 +110,7 @@ function PackageSearch() {
             placeholder="Search packages across fleet (e.g. openssl, log4j, curl)..."
             value={searchValue}
             onChange={(e) => handleSearchChange(e.target.value)}
-            className="bg-transparent border-none outline-none text-[13px] text-text-primary w-full placeholder:text-text-tertiary"
+            className="bg-transparent border-none outline-none text-sm text-text-primary w-full placeholder:text-text-tertiary"
           />
         </div>
       </div>
@@ -133,16 +134,16 @@ function PackageSearch() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Package</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Version</th>
-                  <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Type</th>
+                  <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Package</th>
+                  <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Version</th>
+                  <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Type</th>
                   {showSearch ? (
                     <>
-                      <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">License</th>
-                      <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Image</th>
+                      <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">License</th>
+                      <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Image</th>
                     </>
                   ) : (
-                    <th className="px-5 py-3 text-right text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">
+                    <th className="px-5 py-3 text-right text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">
                       <span className="inline-flex items-center gap-1">Images <ArrowUpDown className="h-3 w-3" /></span>
                     </th>
                   )}
@@ -152,28 +153,28 @@ function PackageSearch() {
                 {results.map((pkg, i) => (
                   <tr key={`${pkg.name}-${pkg.version}-${i}`} className="border-b border-border/50 last:border-b-0 hover:bg-bg-hover transition-colors">
                     <td className="px-5 py-3.5">
-                      <span className="font-mono text-[13px] font-medium text-text-primary">{pkg.name}</span>
+                      <span className="font-mono text-sm font-medium text-text-primary">{pkg.name}</span>
                     </td>
                     <td className="px-5 py-3.5">
-                      <span className="font-mono text-[12px] text-text-secondary">{pkg.version}</span>
+                      <span className="font-mono text-xs text-text-secondary">{pkg.version}</span>
                     </td>
                     <td className="px-5 py-3.5">
                       {pkg.type && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-bg-tertiary text-text-secondary border border-border">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-micro font-mono font-medium bg-bg-tertiary text-text-secondary border border-border">
                           {pkg.type}
                         </span>
                       )}
                     </td>
                     {showSearch ? (
                       <>
-                        <td className="px-5 py-3.5 text-[12px] text-text-secondary">{(pkg as PackageSearchResult).license || '-'}</td>
+                        <td className="px-5 py-3.5 text-xs text-text-secondary">{(pkg as PackageSearchResult).license || '-'}</td>
                         <td className="px-5 py-3.5">
-                          <span className="font-mono text-[11px] text-text-tertiary truncate block max-w-[250px]">{(pkg as PackageSearchResult).image_reference}</span>
+                          <ImageRef references={(pkg as PackageSearchResult).image_reference} className="text-caption w-full" />
                         </td>
                       </>
                     ) : (
                       <td className="px-5 py-3.5 text-right">
-                        <span className="font-mono text-[13px] font-medium text-accent">{(pkg as TopPackageEntry).image_count}</span>
+                        <span className="font-mono text-sm font-medium text-accent">{(pkg as TopPackageEntry).image_count}</span>
                       </td>
                     )}
                   </tr>
@@ -183,7 +184,7 @@ function PackageSearch() {
 
             {showSearch && totalPages !== undefined && totalPages > 1 && (
               <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-                <span className="text-[12px] text-text-tertiary">Page {page + 1} of {totalPages}</span>
+                <span className="text-xs text-text-tertiary">Page {page + 1} of {totalPages}</span>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPage(p => Math.max(0, p - 1))}

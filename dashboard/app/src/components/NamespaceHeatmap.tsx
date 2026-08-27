@@ -25,7 +25,7 @@ export function NamespaceHeatmap({ maxNamespaces = 6 }: NamespaceHeatmapProps) {
             key={m.key}
             onClick={() => setMode(m.key)}
             className={cn(
-              'px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors',
+              'px-2.5 py-1 rounded-md text-caption font-semibold transition-colors',
               mode === m.key
                 ? 'bg-bg-card text-accent shadow-sm'
                 : 'text-text-tertiary hover:text-text-secondary'

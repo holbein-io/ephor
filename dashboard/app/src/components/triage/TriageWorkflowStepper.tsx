@@ -64,12 +64,12 @@ export function TriageWorkflowStepper({
                 ) : state === 'current' ? (
                   <div className="w-2.5 h-2.5 rounded-full bg-accent" />
                 ) : (
-                  <span className="font-mono text-[13px]">{i + 1}</span>
+                  <span className="font-mono text-sm">{i + 1}</span>
                 )}
               </div>
               <div
                 className={cn(
-                  'text-[13px] font-semibold text-center',
+                  'text-sm font-semibold text-center',
                   state === 'completed' && 'text-accent-mint',
                   state === 'current' && 'text-accent',
                   state === 'upcoming' && 'text-text-tertiary'
@@ -79,7 +79,7 @@ export function TriageWorkflowStepper({
               </div>
               <div
                 className={cn(
-                  'text-[11px] font-mono text-center',
+                  'text-caption font-mono text-center',
                   state === 'completed' && 'text-accent-mint',
                   state === 'current' && 'text-accent',
                   state === 'upcoming' && 'text-text-secondary'

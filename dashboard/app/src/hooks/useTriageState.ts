@@ -1,7 +1,6 @@
 import { useReducer } from 'react';
 import { TriageSession } from '../types';
 
-// State interface for the triage feature
 export interface TriageState {
   currentSession: TriageSession | null;
   prepLead: string;
@@ -20,7 +19,6 @@ export interface TriageState {
   };
 }
 
-// Action types for the reducer
 export type TriageAction =
   | { type: 'SET_CURRENT_SESSION'; payload: TriageSession | null }
   | { type: 'SET_PREP_LEAD'; payload: string }
@@ -42,7 +40,6 @@ export type TriageAction =
   | { type: 'RESET_REMEDIATE_FORM' }
   | { type: 'RESET_SESSION_STATE' };
 
-// Initial state
 export const initialTriageState: TriageState = {
   currentSession: null,
   prepLead: '',
@@ -66,7 +63,6 @@ export const initialTriageState: TriageState = {
   }
 };
 
-// Reducer function
 export function triageReducer(state: TriageState, action: TriageAction): TriageState {
   switch (action.type) {
     case 'SET_CURRENT_SESSION':
@@ -159,7 +155,6 @@ export function triageReducer(state: TriageState, action: TriageAction): TriageS
   }
 }
 
-// Custom hook to use the triage state
 export function useTriageState(initialState?: Partial<TriageState>) {
   const [state, dispatch] = useReducer(triageReducer, {
     ...initialTriageState,

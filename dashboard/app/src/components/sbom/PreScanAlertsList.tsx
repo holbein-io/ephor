@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, ShieldCheck } from 'lucide-react';
 import { sbomService } from '../../services/api';
 import { cn } from '../../utils';
+import { ImageRef } from '../ImageRef';
 
 const ALERT_LIMIT = 200;
 
@@ -39,17 +40,17 @@ export function PreScanAlertsList() {
 
   return (
     <>
-      <p className="text-[13px] text-text-secondary -mt-1">{summary}</p>
+      <p className="text-sm text-text-secondary -mt-1">{summary}</p>
 
       <div className="bg-bg-secondary border border-border rounded-2xl overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border">
-              <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Severity</th>
-              <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">CVE</th>
-              <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Package</th>
-              <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Version</th>
-              <th className="px-5 py-3 text-left text-[11px] font-bold tracking-[0.1em] uppercase text-text-tertiary">Image</th>
+              <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Severity</th>
+              <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">CVE</th>
+              <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Package</th>
+              <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Version</th>
+              <th className="px-5 py-3 text-left text-caption font-bold tracking-[0.1em] uppercase text-text-tertiary">Image</th>
             </tr>
           </thead>
           <tbody>
@@ -60,7 +61,7 @@ export function PreScanAlertsList() {
               >
                 <td className="px-5 py-3.5">
                   <span className={cn(
-                    'inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold tracking-wide',
+                    'inline-flex items-center gap-1 px-2 py-0.5 rounded text-micro font-bold tracking-wide',
                     alert.severity === 'CRITICAL'
                       ? 'bg-severity-critical/15 text-severity-critical'
                       : 'bg-severity-high/15 text-severity-high'
@@ -70,19 +71,19 @@ export function PreScanAlertsList() {
                   </span>
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className="font-mono text-[13px] font-medium text-text-primary">{alert.cve_id}</span>
+                  <span className="font-mono text-sm font-medium text-text-primary">{alert.cve_id}</span>
                   {alert.title && (
-                    <span className="block text-[11px] text-text-tertiary truncate max-w-[280px] mt-0.5">{alert.title}</span>
+                    <span className="block text-caption text-text-tertiary truncate max-w-[280px] mt-0.5">{alert.title}</span>
                   )}
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className="font-mono text-[12px] text-text-secondary">{alert.package_name}</span>
+                  <span className="font-mono text-xs text-text-secondary">{alert.package_name}</span>
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className="font-mono text-[12px] text-text-secondary">{alert.package_version}</span>
+                  <span className="font-mono text-xs text-text-secondary">{alert.package_version}</span>
                 </td>
                 <td className="px-5 py-3.5">
-                  <span className="font-mono text-[11px] text-text-tertiary truncate block max-w-[260px]">{alert.image_reference}</span>
+                  <ImageRef references={alert.image_reference} className="text-caption w-full" />
                 </td>
               </tr>
             ))}

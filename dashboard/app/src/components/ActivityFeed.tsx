@@ -78,7 +78,7 @@ export function ActivityFeed({ entityType, entityId, limit, className }: Activit
               style={{ background: markerColor }}
             />
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] text-text-primary">
+              <div className="text-sm text-text-primary">
                 <span className="font-semibold">{entry.performed_by}</span>{' '}
                 <span className="text-text-secondary">
                   {ACTION_LABELS[entry.action] || entry.action.toLowerCase().replace(/_/g, ' ')}
@@ -89,7 +89,7 @@ export function ActivityFeed({ entityType, entityId, limit, className }: Activit
                   </span>
                 )}
               </div>
-              <div className="text-[11px] text-text-tertiary mt-0.5">
+              <div className="text-caption text-text-tertiary mt-0.5">
                 {formatRelativeTime(entry.created_at)}
               </div>
             </div>

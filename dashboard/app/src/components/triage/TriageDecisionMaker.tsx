@@ -41,10 +41,8 @@ export function TriageDecisionMaker({
   const [decidedVulns, setDecidedVulns] = useState<Set<number>>(new Set());
   const [decidedWorkloadsCount, setDecidedWorkloadsCount] = useState(0);
 
-  // Fetch existing decisions to initialize decidedVulns
   const { data: existingDecisions } = useTriageDecisions(sessionId);
 
-  // Calculate total workloads count across all preparations
   const totalWorkloadsCount = useMemo(() => {
     if (!preparations) return 0;
     return preparations.reduce((total, prep) => {
@@ -53,13 +51,11 @@ export function TriageDecisionMaker({
     }, 0);
   }, [preparations]);
 
-  // Initialize decidedVulns and count from existing decisions
   useEffect(() => {
     if (existingDecisions && existingDecisions.length > 0) {
       const decidedIds = new Set(existingDecisions.map((d: any) => d.vulnerability_id));
       setDecidedVulns(decidedIds);
 
-      // Count workloads for already decided vulnerabilities
       if (preparations) {
         let count = 0;
         preparations.forEach(prep => {
@@ -96,14 +92,11 @@ export function TriageDecisionMaker({
       priority: status === 'needs_remediation' ? priority : undefined
     });
 
-    // Mark as decided and update workload count
     setDecidedVulns(prev => new Set(prev).add(currentPrep.vulnerability_id));
 
-    // Count workloads for this decision
     const workloads = currentPrep.affected_workloads || [];
     setDecidedWorkloadsCount(prev => prev + workloads.length);
 
-    // Reset form
     setDecisionNotes('');
     setAssignedTo('');
     setTargetDate('');
@@ -156,7 +149,6 @@ export function TriageDecisionMaker({
     );
   }
 
-  // Get current prep's workload count for display
   const currentWorkloads = currentPrep?.affected_workloads || [];
   const currentWorkloadCount = currentWorkloads.length;
 
@@ -186,7 +178,6 @@ export function TriageDecisionMaker({
       <CardContent className="space-y-4">
         {currentPrep && (
           <>
-            {/* Vulnerability Details */}
             <div className="border rounded-lg p-4 space-y-3">
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
@@ -215,7 +206,6 @@ export function TriageDecisionMaker({
                 )}
               </div>
 
-              {/* Portal Links */}
               <div className="flex flex-wrap gap-2 pt-2 border-t">
                 <span className="text-xs font-medium text-text-secondary self-center">Links:</span>
                 <Link
@@ -289,7 +279,6 @@ export function TriageDecisionMaker({
               )}
             </div>
 
-            {/* Affected Workloads */}
             <AffectedWorkloads
               workloads={currentWorkloads}
               packageName={currentPrep.package_name || ''}
@@ -297,7 +286,6 @@ export function TriageDecisionMaker({
               fixedVersion={currentPrep.fixed_version}
             />
 
-            {/* Decision Form */}
             <div className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-text-secondary mb-1">
@@ -313,7 +301,6 @@ export function TriageDecisionMaker({
                 />
               </div>
 
-              {/* Show additional fields for remediation */}
               <div className="space-y-3 p-3 bg-bg-secondary rounded-lg">
                 <p className="text-xs font-medium text-text-secondary">If marking for remediation:</p>
                 <div className="grid grid-cols-3 gap-3">
@@ -363,7 +350,6 @@ export function TriageDecisionMaker({
                 </div>
               </div>
 
-              {/* Decision Buttons */}
               <div className="grid grid-cols-2 gap-2 pt-2">
                 <Button
                   size="sm"
@@ -393,7 +379,6 @@ export function TriageDecisionMaker({
                 </Button>
               </div>
 
-              {/* Navigation */}
               {pendingPreparations.length > 1 && (
                 <div className="flex items-center justify-between pt-2 border-t">
                   <Button

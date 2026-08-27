@@ -29,7 +29,6 @@ export function AffectedWorkloads({
 
   return (
     <div className="border rounded-lg overflow-hidden">
-      {/* Header */}
       <div
         className="flex items-center justify-between px-3 py-2 bg-bg-secondary cursor-pointer hover:bg-bg-tertiary"
         onClick={() => setIsExpanded(!isExpanded)}
@@ -52,7 +51,6 @@ export function AffectedWorkloads({
         </div>
       </div>
 
-      {/* Workload List */}
       {isExpanded && (
         <div className="divide-y divide-gray-100">
           {workloads.map((workload) => (
@@ -79,7 +77,7 @@ export function AffectedWorkloads({
                           <span
                             key={key}
                             title={`${key}: ${value}`}
-                            className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-accent/10 text-accent border border-accent/20 cursor-default"
+                            className="inline-flex items-center px-1.5 py-0.5 rounded text-micro font-medium bg-accent/10 text-accent border border-accent/20 cursor-default"
                           >
                             {value}
                           </span>

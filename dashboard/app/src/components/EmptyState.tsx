@@ -53,7 +53,6 @@ export function EmptyState({
   );
 }
 
-// Pre-configured empty states for common scenarios
 export function NoVulnerabilitiesFound({ onClearFilters }: { onClearFilters?: () => void }) {
   return (
     <EmptyState

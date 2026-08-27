@@ -1,13 +1,12 @@
-import { useEffect, useState, useMemo } from 'react';
-import { VulnerabilityTable } from '../components/VulnerabilityTable';
-import { VirtualVulnerabilityTable } from '../components/VirtualVulnerabilityTable';
+import { useEffect, useState } from 'react';
+import { VulnerabilityTable, type Density } from '../components/VulnerabilityTable';
 import { VulnerabilityFilters } from '../components/VulnerabilityFilters';
 import { FilterPills } from '../components/FilterPills';
 import { FilterPresets } from '../components/FilterPresets';
 import { useUrlFilters } from '../hooks/useUrlFilters';
 import { useVulnerabilityList } from '../contexts/VulnerabilityListContext';
 import { VulnerabilityFilters as FiltersType } from '../types';
-import { List, Table2 } from 'lucide-react';
+import { Rows3, Rows4 } from 'lucide-react';
 
 export function Vulnerabilities() {
   const {
@@ -30,30 +29,24 @@ export function Vulnerabilities() {
     totalCount
   } = useVulnerabilityList();
 
-  const [viewMode, setViewMode] = useState<'table' | 'infinite'>(() => {
-    return (localStorage.getItem('vuln-view-mode') as 'table' | 'infinite') || 'infinite';
+  const [density, setDensity] = useState<Density>(() => {
+    return (localStorage.getItem('vuln-density') as Density) || 'comfortable';
   });
 
-  const infiniteFilters = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { page, limit, ...rest } = filters;
-    return rest;
-  }, [filters]);
+  useEffect(() => {
+    setQueryFilters(filters);
+  }, [filters, setQueryFilters]);
 
   useEffect(() => {
-    setQueryFilters(infiniteFilters);
-  }, [infiniteFilters, setQueryFilters]);
-
-  useEffect(() => {
-    localStorage.setItem('vuln-view-mode', viewMode);
-  }, [viewMode]);
+    localStorage.setItem('vuln-density', density);
+  }, [density]);
 
   const handleFiltersChange = (newFilters: typeof filters) => {
     setFilters(newFilters);
   };
 
   const handleApplyPreset = (presetFilters: Partial<FiltersType>) => {
-    setFilters({ ...filters, ...presetFilters, page: 1 });
+    setFilters({ ...filters, ...presetFilters });
   };
 
   if (error) {
@@ -65,15 +58,14 @@ export function Vulnerabilities() {
   }
 
   return (
-    <div className="space-y-3 max-w-[1400px] mx-auto">
-      {/* Page Header */}
+    <div className="space-y-3">
       <div className="flex items-start justify-between animate-fade-up">
         <div>
           <h1 className="font-display text-2xl italic text-text-primary tracking-tight">
             Vulnerability Index
           </h1>
           {totalCount !== undefined && (
-            <p className="text-[13px] text-text-secondary mt-1">
+            <p className="text-sm text-text-secondary mt-1">
               {totalCount.toLocaleString()} vulnerabilities tracked
             </p>
           )}
@@ -83,35 +75,35 @@ export function Vulnerabilities() {
             currentFilters={filters}
             onApplyPreset={handleApplyPreset}
           />
-          {/* View Mode Toggle */}
-          <div className="flex items-center gap-0.5 bg-bg-tertiary rounded-lg p-0.5">
+          <div className="flex items-center gap-0.5 bg-bg-tertiary rounded-lg p-0.5" role="group" aria-label="Row density">
             <button
-              onClick={() => setViewMode('infinite')}
+              onClick={() => setDensity('comfortable')}
+              aria-pressed={density === 'comfortable'}
               className={`p-1.5 rounded-md transition-colors ${
-                viewMode === 'infinite'
+                density === 'comfortable'
                   ? 'bg-bg-card text-accent shadow-sm'
                   : 'text-text-tertiary hover:text-text-secondary'
               }`}
-              title="Infinite scroll view"
+              title="Comfortable rows"
             >
-              <List className="h-4 w-4" />
+              <Rows3 className="h-4 w-4" />
             </button>
             <button
-              onClick={() => setViewMode('table')}
+              onClick={() => setDensity('compact')}
+              aria-pressed={density === 'compact'}
               className={`p-1.5 rounded-md transition-colors ${
-                viewMode === 'table'
+                density === 'compact'
                   ? 'bg-bg-card text-accent shadow-sm'
                   : 'text-text-tertiary hover:text-text-secondary'
               }`}
-              title="Paginated table view"
+              title="Compact rows"
             >
-              <Table2 className="h-4 w-4" />
+              <Rows4 className="h-4 w-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Filter Bar */}
       <div className="animate-fade-up delay-1">
         <VulnerabilityFilters
           filters={filters}
@@ -120,7 +112,6 @@ export function Vulnerabilities() {
         />
       </div>
 
-      {/* Active Filter Pills */}
       {hasActiveFilters && (
         <div className="animate-fade-up delay-2">
           <FilterPills
@@ -131,9 +122,8 @@ export function Vulnerabilities() {
         </div>
       )}
 
-      {/* Results bar */}
       {totalCount !== undefined && (
-        <div className="flex items-center justify-between text-[12.5px] text-text-tertiary animate-fade-up delay-2">
+        <div className="flex items-center justify-between text-xs text-text-tertiary animate-fade-up delay-2">
           <span>
             Showing {allVulnerabilities.length.toLocaleString()} of{' '}
             <span className="font-medium text-text-secondary">{totalCount.toLocaleString()}</span>
@@ -141,23 +131,17 @@ export function Vulnerabilities() {
         </div>
       )}
 
-      {/* Results Table */}
       <div className="bg-bg-secondary border border-border rounded-2xl overflow-hidden animate-fade-up delay-3">
-        {viewMode === 'infinite' ? (
-          <VirtualVulnerabilityTable
-            vulnerabilities={allVulnerabilities as any}
-            loading={isLoading}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-            fetchNextPage={fetchNextPage}
-            totalCount={totalCount}
-          />
-        ) : (
-          <VulnerabilityTable
-            vulnerabilities={allVulnerabilities as any}
-            loading={isLoading}
-          />
-        )}
+        <VulnerabilityTable
+          vulnerabilities={allVulnerabilities}
+          loading={isLoading}
+          density={density}
+          hasNextPage={hasNextPage}
+          isFetchingNextPage={isFetchingNextPage}
+          fetchNextPage={fetchNextPage}
+          totalCount={totalCount}
+          onClearFilters={hasActiveFilters ? clearFilters : undefined}
+        />
       </div>
     </div>
   );

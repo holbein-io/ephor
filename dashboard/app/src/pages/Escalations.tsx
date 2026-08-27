@@ -55,15 +55,13 @@ export function Escalations() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="font-display text-2xl italic text-text-primary tracking-tight">Escalations</h1>
-          <p className="text-[13px] text-text-secondary mt-1">Manage vulnerability escalations requiring attention</p>
+          <p className="text-sm text-text-secondary mt-1">Manage vulnerability escalations requiring attention</p>
         </div>
       </div>
 
-      {/* Status Overview Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardContent className="p-6">
@@ -102,7 +100,6 @@ export function Escalations() {
         </Card>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-4">
@@ -123,7 +120,6 @@ export function Escalations() {
         </CardContent>
       </Card>
 
-      {/* Escalations List */}
       {isLoading ? (
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
@@ -153,7 +149,6 @@ export function Escalations() {
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1 space-y-3">
-                    {/* Header Row */}
                     <div className="flex items-center space-x-4">
                       <Badge
                         variant={
@@ -176,7 +171,6 @@ export function Escalations() {
                       </Badge>
                     </div>
 
-                    {/* Vulnerability Info */}
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
                         <span className="font-semibold text-text-primary font-mono">
@@ -194,7 +188,6 @@ export function Escalations() {
                       )}
                     </div>
 
-                    {/* Escalation Details */}
                     <div className="flex items-center space-x-6 text-sm text-text-tertiary">
                       {escalation.escalated_by && (
                         <div className="flex items-center space-x-1">
@@ -209,7 +202,6 @@ export function Escalations() {
                       </div>
                     </div>
 
-                    {/* Reason */}
                     {escalation.reason && (
                       <div className="flex items-start space-x-2">
                         <MessageSquare className="h-4 w-4 text-text-tertiary mt-0.5" />
@@ -218,7 +210,6 @@ export function Escalations() {
                     )}
                   </div>
 
-                  {/* Actions */}
                   <div className="flex flex-col space-y-2">
                     {canManageEscalations && escalation.status === 'pending' && (
                       <Button
