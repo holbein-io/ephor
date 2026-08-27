@@ -4,6 +4,7 @@ import { FileText, Download, ChevronRight, GitCompareArrows } from 'lucide-react
 import { sbomService } from '../../services/api';
 import { SbomHistoryEntry, SbomDiffResult } from '../../types';
 import { cn, formatDate } from '../../utils';
+import { ImageRef } from '../ImageRef';
 
 export function SbomExplorer() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -78,7 +79,7 @@ export function SbomExplorer() {
                 selectedImage === img ? 'bg-accent/5' : 'hover:bg-bg-hover'
               )}
             >
-              <span className="font-mono text-xs text-text-primary truncate">{img}</span>
+              <ImageRef references={img} className="text-xs flex-1" />
               <ChevronRight className={cn('h-3.5 w-3.5 text-text-tertiary flex-shrink-0 transition-transform',
                 selectedImage === img && 'rotate-90'
               )} />
@@ -90,16 +91,16 @@ export function SbomExplorer() {
       <div className="col-span-12 lg:col-span-8 space-y-4">
         {selectedImage && metadata && (
           <div className="bg-bg-secondary border border-border rounded-2xl px-5 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-mono text-sm font-medium text-text-primary">{selectedImage}</h3>
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <h3 className="font-mono text-sm font-medium text-text-primary break-all">{selectedImage}</h3>
                 <p className="text-xs text-text-secondary mt-1">
                   {metadata.format.toUpperCase()} -- {metadata.package_count} packages -- last seen {formatDate(metadata.last_seen)}
                 </p>
               </div>
               <a
                 href={sbomService.getDownloadUrl(selectedImage)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-bg-tertiary text-text-secondary border border-border hover:border-accent hover:text-accent transition-colors"
+                className="flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium bg-bg-tertiary text-text-secondary border border-border hover:border-accent hover:text-accent transition-colors"
               >
                 <Download className="h-3.5 w-3.5" />
                 Download
