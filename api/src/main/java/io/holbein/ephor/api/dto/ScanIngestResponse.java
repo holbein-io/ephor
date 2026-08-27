@@ -12,4 +12,7 @@ public class ScanIngestResponse {
     private int criticalVulns;
     private int autoResolved;
     private int reopened;
+
+    private int failedWorkloads;
+    private int rejectedVulnerabilities;
 }
