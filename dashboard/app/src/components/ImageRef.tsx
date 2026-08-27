@@ -27,7 +27,6 @@ export function ImageRef({ references, showTag = true, className }: ImageRefProp
 
   const [primary, ...rest] = list;
   const { lead, name, tag } = imageRefDisplay(primary);
-
   return (
     <Tooltip>
       <TooltipTrigger asChild>
