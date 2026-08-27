@@ -1,10 +1,9 @@
-import { parseImageRef, formatImageTag, cn } from '../utils';
+import { imageRefDisplay, formatImageTag, cn } from '../utils';
 import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 interface ImageRefProps {
   /** One reference, or the comma-joined list the API returns for image_names. */
   references: string | string[];
-  /** Hide the tag chip where the column is too narrow to earn it. */
   showTag?: boolean;
   className?: string;
 }
@@ -16,8 +15,8 @@ function toList(references: string | string[]): string[] {
 
 /**
  * Renders a container image so the segment that identifies the service survives.
- * Image references are general-to-specific left to right, so the path prefix
- * absorbs the truncation and the name never shrinks below full length.
+ * The lead absorbs the truncation from its start, so a reverse-DNS repository
+ * keeps the qualifier next to the name rather than the organisation prefix.
  */
 export function ImageRef({ references, showTag = true, className }: ImageRefProps) {
   const list = toList(references);
@@ -27,20 +26,19 @@ export function ImageRef({ references, showTag = true, className }: ImageRefProp
   }
 
   const [primary, ...rest] = list;
-  const parsed = parseImageRef(primary);
-  const prefix = parsed.namespace ? `${parsed.namespace}/` : '';
-  const tag = parsed.tag ?? (parsed.digest ? parsed.digest : undefined);
+  const { lead, name, tag } = imageRefDisplay(primary);
 
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span className={cn('inline-flex items-center gap-1 min-w-0 max-w-full font-mono cursor-default', className)}>
-          {prefix && (
-            <span className="shrink-[999] min-w-0 truncate text-text-tertiary">{prefix}</span>
+        <span className={cn('flex items-baseline gap-1 min-w-0 max-w-full font-mono cursor-default', className)}>
+          {/* Shrink order: lead, then tag, then name. */}
+          {lead && (
+            <span className="clip-start shrink-[999] min-w-0 text-text-tertiary">{lead}</span>
           )}
-          <span className="shrink min-w-0 truncate font-medium text-text-secondary">{parsed.name}</span>
+          <span className="shrink min-w-0 truncate font-medium text-text-secondary">{name}</span>
           {showTag && tag && (
-            <span className="shrink-0 font-semibold text-accent bg-accent/10 px-1 py-0.5 rounded text-[0.85em]">
+            <span className="shrink-[50] min-w-0 truncate font-semibold text-accent bg-accent/10 px-1 rounded text-[0.85em]">
               {formatImageTag(tag)}
             </span>
           )}
@@ -49,7 +47,7 @@ export function ImageRef({ references, showTag = true, className }: ImageRefProp
           )}
         </span>
       </TooltipTrigger>
-      <TooltipContent className="max-w-[min(90vw,42rem)]">
+      <TooltipContent className="max-w-[min(90vw,48rem)]">
         <div className="flex flex-col gap-1 font-mono">
           {list.map(ref => (
             <span key={ref} className="break-all">{ref}</span>

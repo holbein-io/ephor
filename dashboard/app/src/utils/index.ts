@@ -98,6 +98,8 @@ export interface ParsedImageRef {
   full: string;
 }
 
+const COLON_DIGEST = /:(sha\d{3}:[0-9a-f]+)$/i;
+
 /**
  * The API composes this field as CONCAT(image_name, ':', image_tag), so a naive
  * split(':') loses the tag whenever the registry carries a port. Split on the last
@@ -112,6 +114,14 @@ export function parseImageRef(reference: string): ParsedImageRef {
   if (digestAt !== -1) {
     digest = remainder.slice(digestAt + 1) || undefined;
     remainder = remainder.slice(0, digestAt);
+  } else {
+    // Some collectors compose "repo:tag" with the digest, so the value can end
+    // ":sha256:..." rather than "@sha256:". The algorithm prefix disambiguates.
+    const colonDigest = remainder.match(COLON_DIGEST);
+    if (colonDigest) {
+      digest = colonDigest[1];
+      remainder = remainder.slice(0, colonDigest.index);
+    }
   }
 
   let tag: string | undefined;
@@ -145,7 +155,54 @@ export function formatImageTag(tag: string): string {
   if (SHA1_HEX.test(tag)) {
     return tag.substring(0, 8);
   }
-  return tag;
+  // Version at the front, commit at the back; the timestamp between them drops.
+  return middleEllipsis(tag, 18);
+}
+
+export function middleEllipsis(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  const head = Math.ceil((maxLength - 1) / 2);
+  const tail = Math.floor((maxLength - 1) / 2);
+  return `${text.slice(0, head)}…${text.slice(text.length - tail)}`;
+}
+
+export interface ImageRefDisplay {
+  /** Path and package qualifiers. Clipped from the start, never the end. */
+  lead: string;
+  /** The segment that names the service. */
+  name: string;
+  tag?: string;
+}
+
+const normalize = (segment: string) => segment.replace(/[^a-z0-9]/gi, '').toLowerCase();
+
+/**
+ * Splits a reference into the service name and the qualifiers around it.
+ * Corporate registries hold reverse-DNS repositories where the service is the
+ * last dot-segment but the segment telling it apart from its siblings sits
+ * further left, so the qualifiers become a lead that clips from its start.
+ */
+export function imageRefDisplay(reference: string): ImageRefDisplay {
+  const parsed = parseImageRef(reference);
+
+  const pathParts = parsed.repository.split('/').filter(Boolean);
+  const dotParts = (pathParts.pop() ?? '').split('.').filter(Boolean);
+  const name = dotParts.pop() ?? parsed.name;
+
+  const pathSeen = new Set(pathParts.map(normalize));
+  const normalizedName = normalize(name);
+
+  const qualifiers = dotParts.filter(segment => {
+    const key = normalize(segment);
+    if (key.length < 4) return true;
+    // A qualifier the repository or the name already states earns no width.
+    return !pathSeen.has(key) && !normalizedName.startsWith(key);
+  });
+
+  const leadPath = pathParts.length ? `${pathParts.join('/')}/` : '';
+  const leadQualifier = qualifiers.length ? `${qualifiers.join('.')}.` : '';
+
+  return { lead: leadPath + leadQualifier, name, tag: parsed.tag ?? parsed.digest };
 }
 
 export function pluralize(count: number, singular: string, plural?: string): string {
