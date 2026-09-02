@@ -94,6 +94,16 @@
   margin-inline: auto;
 }
 
+/* Clips the start of a line rather than its end: aligning to the flex end pushes
+   the overflow off the left edge. An image path needs this, since the segments
+   nearest the service name are the ones that identify it. */
+.clip-start {
+  display: flex;
+  justify-content: flex-end;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
 @layer base {
   html {
     font-family: var(--font-body);
