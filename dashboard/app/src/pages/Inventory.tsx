@@ -6,17 +6,18 @@ import { PackageSearchResult, TopPackageEntry } from '../types';
 import { sbomService } from '../services/api';
 import { LicenseAudit } from '../components/sbom/LicenseAudit';
 import { SbomExplorer } from '../components/sbom/SbomExplorer';
-import { PreScanAlertsList } from '../components/sbom/PreScanAlertsList';
+import { UnreportedCvesList } from '../components/sbom/UnreportedCvesList';
+import { Pagination } from '../components/Pagination';
 import { ImageRef } from '../components/ImageRef';
 import { cn } from '../utils';
 
-type Tab = 'packages' | 'licenses' | 'sboms' | 'prescan';
+type Tab = 'packages' | 'licenses' | 'sboms' | 'unreported';
 
 const tabs: { key: Tab; label: string }[] = [
   { key: 'packages', label: 'Packages' },
   { key: 'licenses', label: 'Licenses' },
   { key: 'sboms', label: 'SBOMs' },
-  { key: 'prescan', label: 'Pre-Scan Alerts' },
+  { key: 'unreported', label: 'Unreported CVEs' },
 ];
 
 export function Inventory() {
@@ -54,7 +55,7 @@ export function Inventory() {
       {activeTab === 'packages' && <PackageSearch />}
       {activeTab === 'licenses' && <LicenseAudit />}
       {activeTab === 'sboms' && <SbomExplorer />}
-      {activeTab === 'prescan' && <PreScanAlertsList />}
+      {activeTab === 'unreported' && <UnreportedCvesList />}
     </div>
   );
 }
@@ -182,26 +183,8 @@ function PackageSearch() {
               </tbody>
             </table>
 
-            {showSearch && totalPages !== undefined && totalPages > 1 && (
-              <div className="flex items-center justify-between px-5 py-3 border-t border-border">
-                <span className="text-xs text-text-tertiary">Page {page + 1} of {totalPages}</span>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPage(p => Math.max(0, p - 1))}
-                    disabled={page === 0}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-bg-tertiary text-text-secondary border border-border hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() => setPage(p => p + 1)}
-                    disabled={page + 1 >= totalPages}
-                    className="px-3 py-1.5 rounded-lg text-xs font-medium bg-bg-tertiary text-text-secondary border border-border hover:border-accent disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
+            {showSearch && totalPages !== undefined && (
+              <Pagination page={page} totalPages={totalPages} onPageChange={setPage} />
             )}
           </>
         )}

@@ -409,13 +409,33 @@ export interface PackageChangeDiff {
   new_version: string;
 }
 
-export interface PreScanAlert {
+export interface UnreportedCve {
   cve_id: string;
-  severity: string;
-  package_name: string;
-  package_version: string;
-  title: string;
   image_reference: string;
+  vulnerability_id: number;
+  severity: string;
+  kev_listed: boolean;
+  epss_score: number | null;
+  published_date: string | null;
+  title: string | null;
+  fixed_versions: string[];
+  packages: string[];
+  namespaces: string[];
+  workloads: string[];
+}
+
+export interface UnreportedCveSummary {
+  total: number;
+  kev_listed: number;
+  epss_high: number;
+  images: number;
+}
+
+export interface UnreportedCveFilters {
+  namespace?: string;
+  kev_only?: boolean;
+  min_epss?: number;
+  severity?: string;
 }
 
 export interface NamespaceComparison {

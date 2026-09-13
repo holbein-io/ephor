@@ -1,19 +1,18 @@
 import { X } from 'lucide-react';
-import { VulnerabilityFilters } from '../types';
 
-interface FilterPill {
-  key: keyof VulnerabilityFilters;
+interface FilterPill<K extends string> {
+  key: K;
   label: string;
   value: string;
 }
 
-interface FilterPillsProps {
-  filters: FilterPill[];
-  onRemove: (key: keyof VulnerabilityFilters) => void;
+interface FilterPillsProps<K extends string> {
+  filters: FilterPill<K>[];
+  onRemove: (key: K) => void;
   onClearAll: () => void;
 }
 
-export function FilterPills({ filters, onRemove, onClearAll }: FilterPillsProps) {
+export function FilterPills<K extends string>({ filters, onRemove, onClearAll }: FilterPillsProps<K>) {
   if (filters.length === 0) return null;
 
   return (

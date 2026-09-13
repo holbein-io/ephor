@@ -13,10 +13,13 @@ import jakarta.persistence.Query;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -169,76 +172,122 @@ public class SbomQueryService {
                 .build();
     }
 
-    // --- Pre-scan alerts (CVE matching) ---
+    // --- Unreported CVEs (ADR-007) ---
 
-    // Name + exact version (name-only flags patched versions), scoped to each image's latest SBOM.
-    public List<PreScanAlert> findPreScanAlerts(int limit) {
-        Query query = entityManager.createNativeQuery("""
-            WITH latest_sbom AS (
-                SELECT DISTINCT ON (image_reference) id
-                FROM sbom_documents
-                ORDER BY image_reference, last_seen DESC
-            )
-            SELECT DISTINCT v.cve_id, v.severity, v.package_name, v.package_version, v.title,
-                   sp.image_reference
+    // Only the newest document per image, and only images a container currently runs;
+    // the same rule getCoverage applies.
+    private static final String LATEST_SBOM_CTE = """
+        latest_sbom AS (
+            SELECT DISTINCT ON (image_reference) id, image_reference
+            FROM sbom_documents
+            ORDER BY image_reference, last_seen DESC
+        )""";
+
+    private static final String LIVE_CTE = """
+        live AS (
+            SELECT c.id AS container_id, w.namespace, w.name AS workload,
+                   concat(c.image_name, ':', c.image_tag) AS image_reference
+            FROM containers c
+            JOIN workloads w ON w.id = c.workload_id
+            WHERE c.image_name IS NOT NULL
+        )""";
+
+    // Exclusion is per CVE rather than per vulnerability row, so a second scanner type
+    // cannot re-flag what the first already reported on the image.
+    private static final String HITS_CTE = """
+        hits AS (
+            SELECT v.id AS vulnerability_id, v.cve_id, v.severity, v.title, v.kev_listed,
+                   v.epss_score, v.published_date, v.fixed_version,
+                   sp.image_reference, sp.name AS package_name, sp.version AS package_version,
+                   live.namespace, live.workload
             FROM vulnerabilities v
-            JOIN sbom_packages sp
-              ON sp.name = v.package_name
-             AND sp.version = v.package_version
+            JOIN sbom_packages sp ON sp.name = v.package_name AND sp.version = v.package_version
             JOIN latest_sbom l ON l.id = sp.sbom_id
-            WHERE v.severity IN ('CRITICAL', 'HIGH')
+            JOIN live ON live.image_reference = sp.image_reference
+            WHERE (v.severity IN ('CRITICAL', 'HIGH') OR v.kev_listed)
               AND NOT EXISTS (
-                SELECT 1
-                FROM vulnerability_instances vi
-                JOIN containers c ON c.id = vi.container_id
-                WHERE vi.vulnerability_id = v.id
-                  AND CONCAT(c.image_name, ':', c.image_tag) = sp.image_reference
-              )
-            ORDER BY v.severity, v.cve_id
-            """);
-        query.setMaxResults(limit);
+                  SELECT 1
+                  FROM vulnerability_instances vi
+                  JOIN vulnerabilities v2 ON v2.id = vi.vulnerability_id
+                  JOIN live l2 ON l2.container_id = vi.container_id
+                  WHERE v2.cve_id = v.cve_id
+                    AND l2.image_reference = sp.image_reference)
+              %s
+        )""";
+
+    // vulnerabilities is unique per package row; fold them so one CVE on one image is one row.
+    private static final String GROUPED_CTE = """
+        grouped AS (
+            SELECT cve_id, image_reference,
+                   min(vulnerability_id) AS vulnerability_id,
+                   min(CASE severity WHEN 'CRITICAL' THEN 0 WHEN 'HIGH' THEN 1
+                                     WHEN 'MEDIUM' THEN 2 WHEN 'LOW' THEN 3 ELSE 4 END) AS severity_rank,
+                   bool_or(kev_listed) AS kev_listed,
+                   max(epss_score) AS epss_score,
+                   min(published_date) AS published_date,
+                   min(title) AS title,
+                   string_agg(DISTINCT fixed_version, '|') AS fixed_versions,
+                   string_agg(DISTINCT package_name || '@' || package_version, '|') AS packages,
+                   string_agg(DISTINCT namespace, '|') AS namespaces,
+                   string_agg(DISTINCT namespace || '/' || workload, '|') AS workloads
+            FROM hits
+            GROUP BY cve_id, image_reference
+        )""";
+
+    private static final String UNREPORTED_SELECT = """
+        SELECT cve_id, image_reference, vulnerability_id,
+               CASE severity_rank WHEN 0 THEN 'CRITICAL' WHEN 1 THEN 'HIGH'
+                                  WHEN 2 THEN 'MEDIUM' WHEN 3 THEN 'LOW' ELSE 'UNKNOWN' END AS severity,
+               kev_listed, epss_score, published_date, title,
+               fixed_versions, packages, namespaces, workloads
+        FROM grouped
+        ORDER BY kev_listed DESC, epss_score DESC NULLS LAST, severity_rank,
+                 published_date DESC NULLS LAST, cve_id, image_reference
+        """;
+
+    public Page<UnreportedCve> findUnreportedCves(UnreportedCveFilter filter, Pageable pageable) {
+        Query query = unreportedQuery(UNREPORTED_SELECT, filter);
+        query.setFirstResult((int) pageable.getOffset());
+        query.setMaxResults(pageable.getPageSize());
 
         @SuppressWarnings("unchecked")
         List<Object[]> rows = query.getResultList();
+        List<UnreportedCve> content = rows.stream().map(this::toUnreportedCve).toList();
 
-        return rows.stream()
-                .map(row -> PreScanAlert.builder()
-                        .cveId((String) row[0])
-                        .severity((String) row[1])
-                        .packageName((String) row[2])
-                        .packageVersion((String) row[3])
-                        .title((String) row[4])
-                        .imageReference((String) row[5])
-                        .build())
-                .toList();
+        long total = ((Number) unreportedQuery("SELECT count(*) FROM grouped", filter).getSingleResult()).longValue();
+        return new PageImpl<>(content, pageable, total);
     }
 
-    public long countPreScanAlerts() {
-        Query query = entityManager.createNativeQuery("""
-            WITH latest_sbom AS (
-                SELECT DISTINCT ON (image_reference) id
-                FROM sbom_documents
-                ORDER BY image_reference, last_seen DESC
-            )
-            SELECT COUNT(*) FROM (
-                SELECT DISTINCT v.cve_id, v.severity, v.package_name, v.package_version, v.title,
-                       sp.image_reference
-                FROM vulnerabilities v
-                JOIN sbom_packages sp
-                  ON sp.name = v.package_name
-                 AND sp.version = v.package_version
-                JOIN latest_sbom l ON l.id = sp.sbom_id
-                WHERE v.severity IN ('CRITICAL', 'HIGH')
-                  AND NOT EXISTS (
-                    SELECT 1
-                    FROM vulnerability_instances vi
-                    JOIN containers c ON c.id = vi.container_id
-                    WHERE vi.vulnerability_id = v.id
-                      AND CONCAT(c.image_name, ':', c.image_tag) = sp.image_reference
-                  )
-            ) alerts
-            """);
-        return ((Number) query.getSingleResult()).longValue();
+    public UnreportedCveSummary summarizeUnreportedCves() {
+        Object[] row = (Object[]) unreportedQuery("""
+                SELECT count(*),
+                       count(*) FILTER (WHERE kev_listed),
+                       count(*) FILTER (WHERE epss_score >= 0.1),
+                       count(DISTINCT image_reference)
+                FROM grouped
+                """, UnreportedCveFilter.builder().build()).getSingleResult();
+        return UnreportedCveSummary.builder()
+                .total(((Number) row[0]).longValue())
+                .kevListed(((Number) row[1]).longValue())
+                .epssHigh(((Number) row[2]).longValue())
+                .images(((Number) row[3]).longValue())
+                .build();
+    }
+
+    private Query unreportedQuery(String select, UnreportedCveFilter filter) {
+        StringBuilder conditions = new StringBuilder();
+        if (filter.getNamespace() != null) conditions.append(" AND live.namespace = :namespace");
+        if (Boolean.TRUE.equals(filter.getKevOnly())) conditions.append(" AND v.kev_listed");
+        if (filter.getMinEpss() != null) conditions.append(" AND v.epss_score >= :minEpss");
+        if (filter.getSeverity() != null) conditions.append(" AND v.severity = :severity");
+
+        String sql = "WITH " + LATEST_SBOM_CTE + ",\n" + LIVE_CTE + ",\n"
+                + HITS_CTE.formatted(conditions) + ",\n" + GROUPED_CTE + "\n" + select;
+        Query query = entityManager.createNativeQuery(sql);
+        if (filter.getNamespace() != null) query.setParameter("namespace", filter.getNamespace());
+        if (filter.getMinEpss() != null) query.setParameter("minEpss", filter.getMinEpss());
+        if (filter.getSeverity() != null) query.setParameter("severity", filter.getSeverity().toUpperCase());
+        return query;
     }
 
     // --- Mappers ---
@@ -292,6 +341,37 @@ public class SbomQueryService {
                 .type((String) row[2])
                 .imageCount((Long) row[3])
                 .build();
+    }
+
+    private UnreportedCve toUnreportedCve(Object[] row) {
+        return UnreportedCve.builder()
+                .cveId((String) row[0])
+                .imageReference((String) row[1])
+                .vulnerabilityId(((Number) row[2]).longValue())
+                .severity((String) row[3])
+                .kevListed(Boolean.TRUE.equals(row[4]))
+                .epssScore(row[5] == null ? null : ((Number) row[5]).doubleValue())
+                .publishedDate(row[6] != null ? toInstant(row[6]) : null)
+                .title((String) row[7])
+                .fixedVersions(splitAgg((String) row[8]))
+                .packages(splitAgg((String) row[9]))
+                .namespaces(splitAgg((String) row[10]))
+                .workloads(splitAgg((String) row[11]))
+                .build();
+    }
+
+    private static List<String> splitAgg(String agg) {
+        return agg == null || agg.isEmpty() ? List.of() : List.of(agg.split("\\|"));
+    }
+
+    private Instant toInstant(Object value) {
+        if (value instanceof Instant instant) {
+            return instant;
+        }
+        if (value instanceof Timestamp timestamp) {
+            return timestamp.toInstant();
+        }
+        throw new IllegalArgumentException("Cannot convert " + value.getClass() + " to Instant");
     }
 
     private PackageSearchResult toSearchResult(SbomPackage pkg) {
