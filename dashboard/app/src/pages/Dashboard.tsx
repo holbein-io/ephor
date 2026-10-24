@@ -6,7 +6,7 @@ import { StatusOverview } from '../components/dashboard/StatusOverview';
 import { NamespaceHeatmap } from '../components/NamespaceHeatmap';
 import { ActivityFeed } from '../components/ActivityFeed';
 import { SbomCoverage } from '../components/dashboard/SbomCoverage';
-import { PreScanAlerts } from '../components/dashboard/PreScanAlerts';
+import { UnreportedCves } from '../components/dashboard/UnreportedCves';
 import { dashboardService } from '../services/api';
 import { useUser } from '../contexts/UserContext';
 
@@ -77,11 +77,11 @@ export function Dashboard() {
           </BentoCard>
 
           <BentoCard
-            title="Pre-Scan Alerts"
-            action={{ label: 'View all →', href: '/inventory?tab=prescan' }}
+            title="Unreported CVEs"
+            action={{ label: 'View all →', href: '/inventory?tab=unreported' }}
             span={hasPermission('VIEW_ADMIN') ? 8 : 12}
           >
-            <PreScanAlerts />
+            <UnreportedCves />
           </BentoCard>
         </div>
       </div>

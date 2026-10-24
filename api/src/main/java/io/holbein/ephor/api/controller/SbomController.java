@@ -1,12 +1,14 @@
 package io.holbein.ephor.api.controller;
 
-import io.holbein.ephor.api.dto.sbom.PreScanAlert;
 import io.holbein.ephor.api.dto.sbom.SbomCoverageResponse;
 import io.holbein.ephor.api.dto.sbom.SbomDiffResult;
 import io.holbein.ephor.api.dto.sbom.SbomHistoryEntry;
 import io.holbein.ephor.api.dto.sbom.SbomIngestRequest;
 import io.holbein.ephor.api.dto.sbom.SbomIngestResponse;
 import io.holbein.ephor.api.dto.sbom.SbomMetadata;
+import io.holbein.ephor.api.dto.sbom.UnreportedCve;
+import io.holbein.ephor.api.dto.sbom.UnreportedCveFilter;
+import io.holbein.ephor.api.dto.sbom.UnreportedCveSummary;
 import io.holbein.ephor.api.entity.SbomDocument;
 import io.holbein.ephor.api.service.SbomIngestionService;
 import io.holbein.ephor.api.service.SbomQueryService;
@@ -14,6 +16,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -117,15 +121,26 @@ public class SbomController {
         return sbomQueryService.diff(sbomIdA, sbomIdB);
     }
 
-    @GetMapping("/alerts/pre-scan")
-    public List<PreScanAlert> getPreScanAlerts(
-            @RequestParam(value = "limit", defaultValue = "50") int limit) {
-        return sbomQueryService.findPreScanAlerts(limit);
+    @GetMapping("/alerts/unreported")
+    public Page<UnreportedCve> getUnreportedCves(
+            @RequestParam(value = "namespace", required = false) String namespace,
+            @RequestParam(value = "kev_only", required = false) Boolean kevOnly,
+            @RequestParam(value = "min_epss", required = false) Double minEpss,
+            @RequestParam(value = "severity", required = false) String severity,
+            @RequestParam(value = "page", defaultValue = "0") int page,
+            @RequestParam(value = "size", defaultValue = "25") int size) {
+        UnreportedCveFilter filter = UnreportedCveFilter.builder()
+                .namespace(namespace)
+                .kevOnly(kevOnly)
+                .minEpss(minEpss)
+                .severity(severity)
+                .build();
+        return sbomQueryService.findUnreportedCves(filter, PageRequest.of(page, size));
     }
 
-    @GetMapping("/alerts/pre-scan/count")
-    public Map<String, Long> getPreScanAlertCount() {
-        return Map.of("count", sbomQueryService.countPreScanAlerts());
+    @GetMapping("/alerts/unreported/summary")
+    public UnreportedCveSummary getUnreportedCveSummary() {
+        return sbomQueryService.summarizeUnreportedCves();
     }
 
     @PostMapping("/availability")

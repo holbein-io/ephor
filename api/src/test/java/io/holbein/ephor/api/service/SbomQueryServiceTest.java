@@ -5,6 +5,7 @@ import io.holbein.ephor.api.dto.ScanIngestRequest;
 import io.holbein.ephor.api.dto.WorkloadData;
 import io.holbein.ephor.api.dto.sbom.*;
 import io.holbein.ephor.api.dto.vulnerability.VulnerabilityData;
+import io.holbein.ephor.api.entity.Vulnerability;
 import io.holbein.ephor.api.entity.Workload;
 import io.holbein.ephor.api.model.enums.ScanStatus;
 import io.holbein.ephor.api.model.enums.SeverityLevel;
@@ -12,6 +13,8 @@ import io.holbein.ephor.api.repositories.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
 import java.util.List;
@@ -92,6 +95,10 @@ class SbomQueryServiceTest extends BaseIntegrationTest {
     }
 
     private void ingestDeployedImage(String imageName, String imageTag) {
+        ingestScannedImage(imageName, imageTag, List.of());
+    }
+
+    private void ingestScannedImage(String imageName, String imageTag, List<VulnerabilityData> vulnerabilities) {
         ScanIngestRequest scanRequest = new ScanIngestRequest();
         scanRequest.setNamespace("ns1");
         scanRequest.setScanLabel("scan-" + imageName);
@@ -107,7 +114,7 @@ class SbomQueryServiceTest extends BaseIntegrationTest {
         container.setName(imageName);
         container.setImageName(imageName);
         container.setImageTag(imageTag);
-        container.setVulnerabilities(List.of());
+        container.setVulnerabilities(vulnerabilities);
 
         workload.setContainers(List.of(container));
         scanRequest.setWorkloads(List.of(workload));
@@ -143,147 +150,112 @@ class SbomQueryServiceTest extends BaseIntegrationTest {
     }
 
     @Test
-    void findPreScanAlerts_detectsUnscannedImageWithVulnerablePackage() {
-        ScanIngestRequest scanRequest = new ScanIngestRequest();
-        scanRequest.setNamespace("ns1");
-        scanRequest.setScanLabel("scan-1");
-        scanRequest.setStatus(ScanStatus.completed);
-        scanRequest.setStartedAt(Instant.now());
+    void findUnreportedCves_flagsRunningImageWhereScannerDidNotReportKnownCve() {
+        // The scanner found the CVE on nginx, scanned redis clean, yet redis ships the same openssl.
+        ingestScannedImage("nginx", "1.25", List.of(knownCve("CVE-2025-0001", "openssl", "3.0.11", SeverityLevel.CRITICAL)));
+        ingestScannedImage("redis", "7.2", List.of());
+        ingestCycloneDx("redis:7.2", List.of(Map.of("name", "openssl", "version", "3.0.11")));
 
-        WorkloadData workload = new WorkloadData();
-        workload.setNamespace("ns1");
-        workload.setName("web-app");
-        workload.setKind(Workload.WorkloadKind.Deployment);
+        Page<UnreportedCve> page = sbomQueryService.findUnreportedCves(noFilter(), PageRequest.of(0, 25));
 
-        ContainerData container = new ContainerData();
-        container.setName("nginx");
-        container.setImageName("nginx");
-        container.setImageTag("1.25");
-
-        VulnerabilityData vuln = new VulnerabilityData();
-        vuln.setCveId("CVE-2025-0001");
-        vuln.setPackageName("openssl");
-        vuln.setPackageVersion("3.0.11");
-        vuln.setSeverity(SeverityLevel.CRITICAL);
-        vuln.setScannerType("trivy");
-        vuln.setTitle("OpenSSL buffer overflow");
-
-        container.setVulnerabilities(List.of(vuln));
-        workload.setContainers(List.of(container));
-        scanRequest.setWorkloads(List.of(workload));
-        scanIngestionService.ingestScan(scanRequest);
-
-        SbomIngestRequest sbomRequest = new SbomIngestRequest();
-        sbomRequest.setImageReference("redis:7.2");
-        sbomRequest.setScanGroupId(UUID.randomUUID());
-        sbomRequest.setFormat("cyclonedx");
-        sbomRequest.setSbom(Map.of(
-                "bomFormat", "CycloneDX",
-                "specVersion", "1.5",
-                "components", List.of(
-                        Map.of("name", "openssl", "version", "3.0.11", "purl", "pkg:debian/openssl@3.0.11")
-                )
-        ));
-        sbomIngestionService.ingest(sbomRequest);
-
-        List<PreScanAlert> alerts = sbomQueryService.findPreScanAlerts(50);
-
-        assertThat(alerts).hasSize(1);
-        assertThat(alerts.get(0).getCveId()).isEqualTo("CVE-2025-0001");
-        assertThat(alerts.get(0).getImageReference()).isEqualTo("redis:7.2");
-        assertThat(alerts.get(0).getPackageName()).isEqualTo("openssl");
-        assertThat(sbomQueryService.countPreScanAlerts()).isEqualTo(1);
+        assertThat(page.getTotalElements()).isEqualTo(1);
+        UnreportedCve cve = page.getContent().get(0);
+        assertThat(cve.getCveId()).isEqualTo("CVE-2025-0001");
+        assertThat(cve.getImageReference()).isEqualTo("redis:7.2");
+        assertThat(cve.getSeverity()).isEqualTo("CRITICAL");
+        assertThat(cve.getPackages()).containsExactly("openssl@3.0.11");
+        assertThat(cve.getNamespaces()).containsExactly("ns1");
+        assertThat(cve.getWorkloads()).containsExactly("ns1/redis-app");
+        assertThat(cve.getVulnerabilityId()).isPositive();
     }
 
     @Test
-    void findPreScanAlerts_ignoresImageRunningPatchedVersionOfSamePackage() {
-        // A CVE is known for openssl 3.0.11 (found while scanning another image)...
-        ScanIngestRequest scanRequest = new ScanIngestRequest();
-        scanRequest.setNamespace("ns1");
-        scanRequest.setScanLabel("scan-1");
-        scanRequest.setStatus(ScanStatus.completed);
-        scanRequest.setStartedAt(Instant.now());
+    void findUnreportedCves_ignoresImageRunningPatchedVersionOfSamePackage() {
+        ingestScannedImage("nginx", "1.25", List.of(knownCve("CVE-2025-0001", "openssl", "3.0.11", SeverityLevel.CRITICAL)));
+        ingestScannedImage("redis", "7.2", List.of());
+        // redis ships the PATCHED 3.0.12, so name-only matching must not flag it.
+        ingestCycloneDx("redis:7.2", List.of(Map.of("name", "openssl", "version", "3.0.12")));
 
-        WorkloadData workload = new WorkloadData();
-        workload.setNamespace("ns1");
-        workload.setName("web-app");
-        workload.setKind(Workload.WorkloadKind.Deployment);
-
-        ContainerData container = new ContainerData();
-        container.setName("nginx");
-        container.setImageName("nginx");
-        container.setImageTag("1.25");
-
-        VulnerabilityData vuln = new VulnerabilityData();
-        vuln.setCveId("CVE-2025-0001");
-        vuln.setPackageName("openssl");
-        vuln.setPackageVersion("3.0.11");
-        vuln.setSeverity(SeverityLevel.CRITICAL);
-        vuln.setScannerType("trivy");
-        vuln.setTitle("OpenSSL buffer overflow");
-
-        container.setVulnerabilities(List.of(vuln));
-        workload.setContainers(List.of(container));
-        scanRequest.setWorkloads(List.of(workload));
-        scanIngestionService.ingestScan(scanRequest);
-
-        // ...but redis:7.2 ships the PATCHED openssl 3.0.12, so it must NOT be flagged.
-        SbomIngestRequest sbomRequest = new SbomIngestRequest();
-        sbomRequest.setImageReference("redis:7.2");
-        sbomRequest.setScanGroupId(UUID.randomUUID());
-        sbomRequest.setFormat("cyclonedx");
-        sbomRequest.setSbom(Map.of(
-                "bomFormat", "CycloneDX",
-                "specVersion", "1.5",
-                "components", List.of(
-                        Map.of("name", "openssl", "version", "3.0.12", "purl", "pkg:debian/openssl@3.0.12")
-                )
-        ));
-        sbomIngestionService.ingest(sbomRequest);
-
-        assertThat(sbomQueryService.findPreScanAlerts(50)).isEmpty();
-        assertThat(sbomQueryService.countPreScanAlerts()).isZero();
+        assertThat(sbomQueryService.findUnreportedCves(noFilter(), PageRequest.of(0, 25)).getTotalElements()).isZero();
     }
 
     @Test
-    void findPreScanAlerts_usesLatestSbomNotStaleVulnerableVersion() {
-        // Known CVE for openssl 3.0.11, found while scanning another image.
-        ScanIngestRequest scanRequest = new ScanIngestRequest();
-        scanRequest.setNamespace("ns1");
-        scanRequest.setScanLabel("scan-1");
-        scanRequest.setStatus(ScanStatus.completed);
-        scanRequest.setStartedAt(Instant.now());
-
-        WorkloadData workload = new WorkloadData();
-        workload.setNamespace("ns1");
-        workload.setName("web-app");
-        workload.setKind(Workload.WorkloadKind.Deployment);
-
-        ContainerData container = new ContainerData();
-        container.setName("nginx");
-        container.setImageName("nginx");
-        container.setImageTag("1.25");
-
-        VulnerabilityData vuln = new VulnerabilityData();
-        vuln.setCveId("CVE-2025-0001");
-        vuln.setPackageName("openssl");
-        vuln.setPackageVersion("3.0.11");
-        vuln.setSeverity(SeverityLevel.CRITICAL);
-        vuln.setScannerType("trivy");
-        vuln.setTitle("OpenSSL buffer overflow");
-
-        container.setVulnerabilities(List.of(vuln));
-        workload.setContainers(List.of(container));
-        scanRequest.setWorkloads(List.of(workload));
-        scanIngestionService.ingestScan(scanRequest);
-
-        // redis:7.2 shipped the vulnerable 3.0.11, then a newer SBOM with the patched 3.0.12.
+    void findUnreportedCves_usesLatestSbomNotStaleVulnerableVersion() {
+        ingestScannedImage("nginx", "1.25", List.of(knownCve("CVE-2025-0001", "openssl", "3.0.11", SeverityLevel.CRITICAL)));
+        ingestScannedImage("redis", "7.2", List.of());
+        // redis shipped the vulnerable 3.0.11, then a newer SBOM with the patched 3.0.12.
         ingestCycloneDx("redis:7.2", List.of(Map.of("name", "openssl", "version", "3.0.11")));
         ingestCycloneDx("redis:7.2", List.of(Map.of("name", "openssl", "version", "3.0.12")));
 
-        // Only the latest SBOM counts, so the stale 3.0.11 row must not alert.
-        assertThat(sbomQueryService.findPreScanAlerts(50)).isEmpty();
-        assertThat(sbomQueryService.countPreScanAlerts()).isZero();
+        assertThat(sbomQueryService.findUnreportedCves(noFilter(), PageRequest.of(0, 25)).getTotalElements()).isZero();
+    }
+
+    @Test
+    void findUnreportedCves_ignoresImagesNoLongerDeployed() {
+        ingestScannedImage("nginx", "1.25", List.of(knownCve("CVE-2025-0001", "openssl", "3.0.11", SeverityLevel.CRITICAL)));
+        // redis has an SBOM but no container runs it any more.
+        ingestCycloneDx("redis:7.2", List.of(Map.of("name", "openssl", "version", "3.0.11")));
+
+        assertThat(sbomQueryService.findUnreportedCves(noFilter(), PageRequest.of(0, 25)).getTotalElements()).isZero();
+        assertThat(sbomQueryService.summarizeUnreportedCves().getTotal()).isZero();
+    }
+
+    @Test
+    void findUnreportedCves_collapsesPackageRowsToOneRowPerCveAndImage() {
+        // The same CVE is known against two package rows; redis carries both.
+        ingestScannedImage("nginx", "1.25", List.of(
+                knownCve("CVE-2025-0001", "openssl", "3.0.11", SeverityLevel.HIGH),
+                knownCve("CVE-2025-0001", "libssl", "3.0.11", SeverityLevel.CRITICAL)));
+        ingestScannedImage("redis", "7.2", List.of());
+        ingestCycloneDx("redis:7.2", List.of(
+                Map.of("name", "openssl", "version", "3.0.11"),
+                Map.of("name", "libssl", "version", "3.0.11")));
+
+        Page<UnreportedCve> page = sbomQueryService.findUnreportedCves(noFilter(), PageRequest.of(0, 25));
+
+        assertThat(page.getTotalElements()).isEqualTo(1);
+        assertThat(page.getContent().get(0).getPackages()).containsExactlyInAnyOrder("openssl@3.0.11", "libssl@3.0.11");
+        assertThat(page.getContent().get(0).getSeverity()).isEqualTo("CRITICAL");
+    }
+
+    @Test
+    void findUnreportedCves_ranksKevListedFirstAndSummarizes() {
+        ingestScannedImage("nginx", "1.25", List.of(
+                knownCve("CVE-2025-0001", "openssl", "3.0.11", SeverityLevel.CRITICAL),
+                knownCve("CVE-2025-0002", "zlib", "1.2.13", SeverityLevel.HIGH)));
+        Vulnerability kev = vulnerabilityRepository.findByNaturalKey("CVE-2025-0002", "zlib", "1.2.13", "trivy").orElseThrow();
+        kev.setKevListed(true);
+        vulnerabilityRepository.save(kev);
+        ingestScannedImage("redis", "7.2", List.of());
+        ingestCycloneDx("redis:7.2", List.of(
+                Map.of("name", "openssl", "version", "3.0.11"),
+                Map.of("name", "zlib", "version", "1.2.13")));
+
+        Page<UnreportedCve> page = sbomQueryService.findUnreportedCves(noFilter(), PageRequest.of(0, 25));
+        assertThat(page.getContent()).extracting(UnreportedCve::getCveId).containsExactly("CVE-2025-0002", "CVE-2025-0001");
+
+        UnreportedCveSummary summary = sbomQueryService.summarizeUnreportedCves();
+        assertThat(summary.getTotal()).isEqualTo(2);
+        assertThat(summary.getKevListed()).isEqualTo(1);
+        assertThat(summary.getImages()).isEqualTo(1);
+
+        UnreportedCveFilter kevOnly = UnreportedCveFilter.builder().kevOnly(true).build();
+        assertThat(sbomQueryService.findUnreportedCves(kevOnly, PageRequest.of(0, 25)).getTotalElements()).isEqualTo(1);
+    }
+
+    private static UnreportedCveFilter noFilter() {
+        return UnreportedCveFilter.builder().build();
+    }
+
+    private static VulnerabilityData knownCve(String cveId, String packageName, String version, SeverityLevel severity) {
+        VulnerabilityData vuln = new VulnerabilityData();
+        vuln.setCveId(cveId);
+        vuln.setPackageName(packageName);
+        vuln.setPackageVersion(version);
+        vuln.setSeverity(severity);
+        vuln.setScannerType("trivy");
+        vuln.setTitle(cveId + " in " + packageName);
+        return vuln;
     }
 
     @Test

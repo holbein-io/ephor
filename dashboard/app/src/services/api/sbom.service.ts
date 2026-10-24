@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { SbomMetadata, SbomHistoryEntry, SbomCoverage, PackageSearchResult, TopPackageEntry, PageResponse, LicenseDistributionEntry, SbomDiffResult, PreScanAlert } from '../../types';
+import { SbomMetadata, SbomHistoryEntry, SbomCoverage, PackageSearchResult, TopPackageEntry, PageResponse, LicenseDistributionEntry, SbomDiffResult, UnreportedCve, UnreportedCveSummary, UnreportedCveFilters } from '../../types';
 
 export const sbomService = {
   async getMetadata(imageReference: string): Promise<SbomMetadata> {
@@ -46,12 +46,12 @@ export const sbomService = {
     return apiClient.get('/sbom/diff', { sbom_id_a: sbomIdA, sbom_id_b: sbomIdB });
   },
 
-  async getPreScanAlerts(limit = 50): Promise<PreScanAlert[]> {
-    return apiClient.get('/sbom/alerts/pre-scan', { limit });
+  async getUnreportedCves(filters: UnreportedCveFilters = {}, page = 0, size = 25): Promise<PageResponse<UnreportedCve>> {
+    return apiClient.get('/sbom/alerts/unreported', { ...filters, page, size });
   },
 
-  async getPreScanAlertCount(): Promise<{ count: number }> {
-    return apiClient.get('/sbom/alerts/pre-scan/count');
+  async getUnreportedCveSummary(): Promise<UnreportedCveSummary> {
+    return apiClient.get('/sbom/alerts/unreported/summary');
   },
 
   async listImages(): Promise<string[]> {

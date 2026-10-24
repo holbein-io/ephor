@@ -11,7 +11,7 @@ Trivy and Grype find your CVEs — thousands of them. Then the JSON scrolls off 
 ## Features
 
 - **Runtime-aware prioritization** — Ephor's scanner runs in-cluster, so it knows which findings are actually deployed. It combines that with CISA KEV and FIRST EPSS exploitation data to sort findings into clear priority tiers (P0–P3), surfacing the ones that are running, exploitable, and fixable ahead of a long list ranked only by CVSS.
-- **Pre-scan CVE alerts** — Ephor indexes the SBOM of every image it sees and matches known CRITICAL/HIGH CVEs against the whole fleet by exact package and version. When a vulnerable package is already sitting in images that haven't been scanned yet, you find out now, not a scan cycle later.
+- **Unreported CVEs** — Ephor indexes the SBOM of every running image and cross-checks it against every CVE the scanner has found anywhere in the fleet, by exact package and version. When a known vulnerable package sits in a running image the scanner did not flag, it surfaces as a short, KEV-and-EPSS-ranked review list.
 - **Unified dashboard** — severity breakdowns, trend charts, and search across every image, namespace, and cluster
 - **Triage workflows** — status management, comments, and a full audit trail
 - **Escalation management** for critical findings
