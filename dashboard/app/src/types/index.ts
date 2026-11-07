@@ -34,6 +34,10 @@ export interface Vulnerability {
   image_names?: string;
   namespaces?: string;
   workloads?: Workload[];
+  // Single status, or "mixed" when instances disagree; always computed over every workload.
+  status?: string;
+  // Workloads per status; a mixed workload counts under each of its statuses.
+  status_counts?: Record<string, number>;
 }
 
 export interface Workload {
@@ -44,8 +48,16 @@ export interface Workload {
   kind: 'Deployment' | 'StatefulSet' | 'DaemonSet' | 'Pod' | 'CronJob';
   image_names?: string;
   created_at: string;
-  instance_status?: string;
+  status?: string;
   labels?: Record<string, string>;
+  containers?: WorkloadContainerStatus[];
+}
+
+export interface WorkloadContainerStatus {
+  instance_id: number;
+  name: string;
+  image: string;
+  status: string;
 }
 
 export interface Comment {

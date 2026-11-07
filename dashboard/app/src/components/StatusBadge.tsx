@@ -1,8 +1,11 @@
 import { cn } from '../utils';
-import { formatStatus } from '../utils';
+import { formatStatus, orderedStatusCounts, ACTIONABLE_STATUSES } from '../utils';
+import { Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 
 interface StatusBadgeProps {
   status: string;
+  /** Workloads per status; when given for a mixed status, the badge names what is still actionable. */
+  counts?: Record<string, number>;
   className?: string;
 }
 
@@ -18,19 +21,42 @@ const statusStyles: Record<string, string> = {
   abandoned: 'bg-bg-tertiary text-text-secondary',
 };
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
+const baseClass = 'inline-flex items-center gap-[5px] px-2.5 py-0.5 rounded-full text-caption font-medium whitespace-nowrap';
+const mutedStyle = 'bg-bg-tertiary text-text-secondary';
+
+export function StatusBadge({ status, counts, className }: StatusBadgeProps) {
   const lower = status.toLowerCase();
-  const style = statusStyles[lower] || 'bg-bg-tertiary text-text-secondary';
+
+  if (lower !== 'mixed' || !counts) {
+    return (
+      <span className={cn(baseClass, statusStyles[lower] || mutedStyle, className)}>
+        {formatStatus(status)}
+      </span>
+    );
+  }
+
+  const entries = orderedStatusCounts(counts);
+  const actionable = entries.find(([s]) => ACTIONABLE_STATUSES.has(s));
 
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-[5px] px-2.5 py-0.5 rounded-full text-caption font-medium whitespace-nowrap',
-        style,
-        className
-      )}
-    >
-      {formatStatus(status)}
-    </span>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className={cn(baseClass, 'cursor-default', actionable ? statusStyles[actionable[0]] : mutedStyle, className)}>
+          Mixed
+          {actionable && <span>· {actionable[1]} {formatStatus(actionable[0]).toLowerCase()}</span>}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>
+        <div className="flex flex-col gap-0.5">
+          {entries.map(([s, n]) => (
+            <span key={s} className="flex justify-between gap-4">
+              <span>{formatStatus(s)}</span>
+              <span className="font-mono">{n}</span>
+            </span>
+          ))}
+          <span className="text-text-tertiary pt-1">workloads per status</span>
+        </div>
+      </TooltipContent>
+    </Tooltip>
   );
 }
