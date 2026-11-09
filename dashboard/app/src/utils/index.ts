@@ -77,6 +77,26 @@ export function formatStatus(status: string): string {
   }
 }
 
+/** Workflow order: statuses that still need action first. */
+export const INSTANCE_STATUS_ORDER = ['open', 'triaged', 'accepted_risk', 'false_positive', 'resolved'];
+export const ACTIONABLE_STATUSES = new Set(['open', 'triaged']);
+
+function statusRank(status: string): number {
+  const i = INSTANCE_STATUS_ORDER.indexOf(status);
+  return i === -1 ? INSTANCE_STATUS_ORDER.length : i;
+}
+
+export function orderedStatusCounts(counts: Record<string, number> | undefined): [string, number][] {
+  return Object.entries(counts ?? {}).sort(([a], [b]) => statusRank(a) - statusRank(b));
+}
+
+export function isActionableWorkload(workload: { status?: string; containers?: { status: string }[] }): boolean {
+  if (workload.containers?.length) {
+    return workload.containers.some((c) => ACTIONABLE_STATUSES.has(c.status));
+  }
+  return ACTIONABLE_STATUSES.has(workload.status ?? 'open');
+}
+
 export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';

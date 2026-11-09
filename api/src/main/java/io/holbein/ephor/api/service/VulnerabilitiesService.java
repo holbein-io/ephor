@@ -51,7 +51,6 @@ public class VulnerabilitiesService {
         Vulnerability v = vulnerabilityRepository.findByIdWithWorkloads(id)
                 .orElseThrow(() -> ResourceNotFoundException.vulnerability(id));
 
-        // Group instances by workload, collecting container images and worst status per workload
         Map<Long, List<VulnerabilityInstance>> instancesByWorkload = new LinkedHashMap<>();
         for (VulnerabilityInstance vi : v.getInstances()) {
             Container c = vi.getContainer();
@@ -60,20 +59,25 @@ public class VulnerabilitiesService {
             }
         }
 
+        Map<String, Long> statusCounts = new LinkedHashMap<>();
         List<VulnerabilityDetailResponse.WorkloadInfo> workloads = instancesByWorkload.values().stream()
                 .map(instances -> {
                     Workload w = instances.getFirst().getContainer().getWorkload();
-                    String imageNames = instances.stream()
-                            .map(vi -> vi.getContainer())
-                            .map(c -> c.getImageName() + ":" + (c.getImageTag() != null ? c.getImageTag() : "latest"))
+                    List<VulnerabilityDetailResponse.ContainerStatus> containers = instances.stream()
+                            .map(vi -> new VulnerabilityDetailResponse.ContainerStatus(
+                                    vi.getId(),
+                                    vi.getContainer().getName(),
+                                    imageReference(vi.getContainer()),
+                                    statusName(vi)))
+                            .toList();
+                    Set<String> workloadStatuses = new LinkedHashSet<>();
+                    containers.forEach(c -> workloadStatuses.add(c.status()));
+                    workloadStatuses.forEach(s -> statusCounts.merge(s, 1L, Long::sum));
+
+                    String imageNames = containers.stream()
+                            .map(VulnerabilityDetailResponse.ContainerStatus::image)
                             .distinct()
                             .collect(java.util.stream.Collectors.joining(", "));
-                    String status = instances.stream()
-                            .map(vi -> vi.getStatus())
-                            .map(s -> s != null ? s.name() : null)
-                            .distinct()
-                            .reduce((a, b) -> "mixed")
-                            .orElse(null);
                     Map<String, String> labels = w.getLabels().stream()
                             .collect(java.util.stream.Collectors.toMap(
                                     WorkloadLabel::getLabelKey,
@@ -84,24 +88,16 @@ public class VulnerabilitiesService {
                             w.getName(),
                             w.getKind() != null ? w.getKind().name() : null,
                             imageNames,
-                            status,
-                            labels
+                            StatusAggregation.overall(workloadStatuses),
+                            labels,
+                            containers
                     );
                 })
                 .toList();
 
-        // Compute aggregated status from all instances
-        Set<String> allStatuses = v.getInstances().stream()
-                .map(vi -> vi.getStatus() != null ? vi.getStatus().name() : "open")
-                .collect(java.util.stream.Collectors.toSet());
-        String status;
-        if (allStatuses.size() == 1) {
-            status = allStatuses.iterator().next();
-        } else if (allStatuses.size() > 1) {
-            status = "mixed";
-        } else {
-            status = "open";
-        }
+        Set<String> allStatuses = new HashSet<>();
+        v.getInstances().forEach(vi -> allStatuses.add(statusName(vi)));
+        String status = StatusAggregation.overall(allStatuses);
 
         return new VulnerabilityDetailResponse(
                 v.getId(),
@@ -128,8 +124,17 @@ public class VulnerabilitiesService {
                 v.getLastSeen(),
                 workloads.size(),
                 status,
+                statusCounts,
                 workloads
         );
+    }
+
+    private static String statusName(VulnerabilityInstance vi) {
+        return vi.getStatus() != null ? vi.getStatus().name() : StatusAggregation.OPEN;
+    }
+
+    private static String imageReference(Container c) {
+        return c.getImageName() + ":" + (c.getImageTag() != null ? c.getImageTag() : "latest");
     }
 
     @Transactional
