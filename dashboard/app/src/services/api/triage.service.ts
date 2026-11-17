@@ -68,7 +68,7 @@ export const triageService = {
     return apiClient.patch(`/triage/sessions/${id}/status`, { status, user });
   },
 
-  async deleteSession(id: number): Promise<{ message: string }> {
+  async deleteSession(id: number): Promise<{ success: boolean; message: string }> {
     return apiClient.delete(`/triage/sessions/${id}`);
   },
 

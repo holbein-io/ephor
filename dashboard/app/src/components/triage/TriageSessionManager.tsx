@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
 import { TriageSession } from '../../types';
 import { formatDateOnly } from '../../utils';
 import { cn } from '../../utils';
@@ -9,6 +9,7 @@ interface TriageSessionManagerProps {
   isLoading: boolean;
   onSelectSession: (session: TriageSession) => void;
   onCreateSession: () => void;
+  onDeleteSession: (session: TriageSession) => void;
 }
 
 const statusBadgeStyles: Record<string, string> = {
@@ -30,7 +31,8 @@ export function TriageSessionManager({
   currentSession,
   isLoading,
   onSelectSession,
-  onCreateSession
+  onCreateSession,
+  onDeleteSession
 }: TriageSessionManagerProps) {
   return (
     <aside className="w-[280px] flex-shrink-0 bg-bg-tertiary border-r border-border-subtle flex flex-col overflow-y-auto">
@@ -65,7 +67,7 @@ export function TriageSessionManager({
                 key={session.id}
                 onClick={() => onSelectSession(session)}
                 className={cn(
-                  'px-3 py-3 rounded-lg cursor-pointer border-l-[3px] border-transparent transition-colors animate-fade-up',
+                  'group px-3 py-3 rounded-lg cursor-pointer border-l-[3px] border-transparent transition-colors animate-fade-up',
                   isSelected
                     ? 'bg-accent-dim border-l-accent border-accent/[0.18]'
                     : 'hover:bg-bg-hover'
@@ -80,8 +82,25 @@ export function TriageSessionManager({
                     {label}
                   </span>
                 </div>
-                <div className="text-caption text-text-secondary font-mono">
-                  {session.preparations_count || 0} reviewed / {session.decisions_count || 0} decided
+                <div className="flex items-center justify-between">
+                  <div className="text-caption text-text-secondary font-mono">
+                    {session.preparations_count || 0} reviewed / {session.decisions_count || 0} decided
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Delete session"
+                    title="Delete session"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDeleteSession(session);
+                    }}
+                    className={cn(
+                      'p-1 -mr-1 rounded text-text-tertiary hover:text-danger hover:bg-danger/10 transition-colors',
+                      isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 focus-visible:opacity-100'
+                    )}
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
             );

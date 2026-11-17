@@ -98,7 +98,22 @@ public class TriageService {
     public DeleteResponse deleteTriageSession(long id) {
         return triageSessionRepository.getTriageSessionsById(id)
                 .map(session -> {
-                    triageSessionRepository.deleteById(id);
+                    // Unlink before the cascade reaches the decisions so Hibernate flushes the UPDATE ahead of the DELETE instead of relying on the FK
+                    session.getDecisions().stream()
+                            .map(TriageDecision::getRemediation)
+                            .filter(Objects::nonNull)
+                            .forEach(remediation -> {
+                                remediation.getTriageDecision().setRemediation(null);
+                                remediation.setTriageDecision(null);
+                            });
+                    triageSessionRepository.delete(session);
+
+                    auditService.log(AuditAction.TRIAGE_SESSION_DELETED, EntityType.TRIAGE_SESSION, id,
+                            Map.of("status", session.getStatus().name(),
+                                    "sessionDate", session.getSessionDate().toString(),
+                                    "decisionsRemoved", session.getDecisions().size(),
+                                    "preparationsRemoved", session.getPreparations().size()));
+
                     return new DeleteResponse(true,
                             String.format("Session with id %s has been deleted", id));
                 })

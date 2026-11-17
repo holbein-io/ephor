@@ -82,6 +82,29 @@ export function useUpdateSessionStatus(currentSessionId?: number, onStatusUpdate
   });
 }
 
+export function useDeleteTriageSession(onSessionDeleted?: (sessionId: number) => void) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (sessionId: number) => {
+      // The API answers 200 with success=false for a missing session
+      const result = await triageService.deleteSession(sessionId);
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      return sessionId;
+    },
+    onSuccess: (sessionId) => {
+      queryClient.invalidateQueries({ queryKey: ['enhanced-triage-sessions'] });
+      queryClient.removeQueries({ queryKey: ['triage-preparations', sessionId] });
+      queryClient.removeQueries({ queryKey: ['triage-bulk-plans', sessionId] });
+      queryClient.removeQueries({ queryKey: ['triage-decisions', sessionId] });
+      queryClient.removeQueries({ queryKey: ['triage-session-metrics', sessionId] });
+      onSessionDeleted?.(sessionId);
+    }
+  });
+}
+
 export function useCreateTriagePreparation() {
   const queryClient = useQueryClient();
 

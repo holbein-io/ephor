@@ -14,6 +14,7 @@ const ACTION_LABELS: Record<string, string> = {
   ESCALATION_STATUS_CHANGED: 'Updated escalation',
   TRIAGE_SESSION_STARTED: 'Started triage session',
   TRIAGE_SESSION_COMPLETED: 'Completed triage session',
+  TRIAGE_SESSION_DELETED: 'Deleted triage session',
   TRIAGE_DECISION_MADE: 'Made triage decision',
   COMMENT_ADDED: 'Added comment',
   COMMENT_UPDATED: 'Updated comment',
@@ -29,6 +30,7 @@ const ACTION_COLORS: Record<string, string> = {
   REMEDIATION_UPDATED: 'var(--color-accent-mint)',
   TRIAGE_SESSION_STARTED: 'var(--color-accent-cool)',
   TRIAGE_SESSION_COMPLETED: 'var(--color-accent-mint)',
+  TRIAGE_SESSION_DELETED: 'var(--color-severity-high)',
   TRIAGE_DECISION_MADE: 'var(--color-accent-cool)',
   COMMENT_ADDED: 'var(--color-text-tertiary)',
 };
