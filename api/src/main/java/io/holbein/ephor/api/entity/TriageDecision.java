@@ -51,7 +51,7 @@ public class TriageDecision {
     @Column(name = "created_at")
     private Instant createdAt;
 
-    @OneToOne(mappedBy = "triageDecision", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "triageDecision", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     private Remediation remediation;
 
     @PrePersist

@@ -5,12 +5,14 @@ import { TriageDecisionMaker } from '../components/triage/TriageDecisionMaker';
 import { TriageBulkOperations } from '../components/triage/TriageBulkOperations';
 import { TriageSessionReview } from '../components/triage/TriageSessionReview';
 import { TriageWorkflowStepper } from '../components/triage/TriageWorkflowStepper';
+import { DeleteSessionDialog } from '../components/triage/DeleteSessionDialog';
 import {
   useTriageSessions,
   useTriagePreparations,
   useTriageBulkPlans,
   useTriageDecisions,
   useCreateTriageSession,
+  useDeleteTriageSession,
   useUpdateSessionStatus,
   useCreateTriagePreparation,
   useDeleteTriagePreparation,
@@ -27,6 +29,7 @@ export function Triage() {
   const { displayName } = useUser();
   const { state, dispatch } = useTriageState({ prepLead: displayName });
   const [prepMaximized, setPrepMaximized] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<TriageSession | null>(null);
 
   const { data: sessions, isLoading: sessionsLoading } = useTriageSessions();
   const { data: preparations, isLoading: preparationsLoading } = useTriagePreparations(
@@ -41,6 +44,12 @@ export function Triage() {
   });
   const updateSessionStatusMutation = useUpdateSessionStatus(state.currentSession?.id, (session) => {
     dispatch({ type: 'SET_CURRENT_SESSION', payload: session });
+  });
+  const deleteSessionMutation = useDeleteTriageSession((deletedId) => {
+    setSessionToDelete(null);
+    if (state.currentSession?.id === deletedId) {
+      dispatch({ type: 'SET_CURRENT_SESSION', payload: null });
+    }
   });
   const createPreparationMutation = useCreateTriagePreparation();
   const deletePreparationMutation = useDeleteTriagePreparation();
@@ -62,6 +71,15 @@ export function Triage() {
       notes: state.sessionNotes || ''
     });
   }, [state, createSessionMutation]);
+
+  const handleConfirmDeleteSession = useCallback((session: TriageSession) => {
+    deleteSessionMutation.mutate(session.id);
+  }, [deleteSessionMutation]);
+
+  const handleCloseDeleteDialog = useCallback(() => {
+    setSessionToDelete(null);
+    deleteSessionMutation.reset();
+  }, [deleteSessionMutation]);
 
   const handleAddToSession = useCallback((vulnerability: Vulnerability, priority?: string, notes?: string) => {
     if (!state.currentSession) return;
@@ -138,6 +156,7 @@ export function Triage() {
           isLoading={sessionsLoading}
           onSelectSession={handleSelectSession}
           onCreateSession={handleCreateSession}
+          onDeleteSession={setSessionToDelete}
         />
       )}
 
@@ -251,6 +270,14 @@ export function Triage() {
         )}
 
       </main>
+
+      <DeleteSessionDialog
+        session={sessionToDelete}
+        isPending={deleteSessionMutation.isPending}
+        error={deleteSessionMutation.error?.message}
+        onConfirm={handleConfirmDeleteSession}
+        onClose={handleCloseDeleteDialog}
+      />
     </div>
   );
 }
