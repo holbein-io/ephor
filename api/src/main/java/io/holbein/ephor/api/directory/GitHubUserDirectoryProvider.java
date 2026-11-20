@@ -8,10 +8,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.web.client.RestClient;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,17 +26,22 @@ public class GitHubUserDirectoryProvider implements UserDirectoryProvider {
 
     private final KnownUserRepository knownUserRepository;
     private final GitHubDirectoryProperties properties;
+    private final PlatformTransactionManager transactionManager;
+    private final ClientHttpRequestFactory outboundRequestFactory;
 
-    private WebClient webClient;
+    private RestClient restClient;
+    private TransactionTemplate transactionTemplate;
 
     @PostConstruct
     void init() {
-        this.webClient = WebClient.builder()
+        this.restClient = RestClient.builder()
+                .requestFactory(outboundRequestFactory)
                 .baseUrl("https://api.github.com")
                 .defaultHeader("Accept", "application/vnd.github+json")
                 .defaultHeader("Authorization", "Bearer " + properties.getToken())
                 .defaultHeader("X-GitHub-Api-Version", "2022-11-28")
                 .build();
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
         log.info("GitHub user directory provider initialized: org={}", properties.getOrg());
     }
 
@@ -59,7 +66,6 @@ public class GitHubUserDirectoryProvider implements UserDirectoryProvider {
     }
 
     @Override
-    @Transactional
     @Scheduled(fixedDelayString = "${ephor.user-directory.github.sync-interval:1800000}")
     public void syncUsers() {
         log.info("Starting GitHub user sync for org '{}'", properties.getOrg());
@@ -89,23 +95,24 @@ public class GitHubUserDirectoryProvider implements UserDirectoryProvider {
                 log.debug("Fetched {} org members (no team mapping)", orgMembers.size());
             }
 
-            // Upsert each user with their aggregated groups
-            int synced = 0;
+            List<SyncedUser> users = new ArrayList<>();
             for (Map.Entry<String, Set<String>> entry : userGroups.entrySet()) {
                 String username = entry.getKey();
-                Set<String> groups = entry.getValue();
-                String groupsCsv = groups.stream().sorted().collect(Collectors.joining(","));
+                String groupsCsv = entry.getValue().stream().sorted().collect(Collectors.joining(","));
 
                 // Fetch user profile for email
                 GitHubUserProfile profile = fetchUserProfile(username);
                 String email = profile != null ? profile.email() : null;
                 String displayName = profile != null && profile.name() != null ? profile.name() : username;
 
-                knownUserRepository.upsert(username, email, displayName, groupsCsv);
-                synced++;
+                users.add(new SyncedUser(username, email, displayName, groupsCsv));
             }
 
-            log.info("GitHub user sync complete: {} users synced", synced);
+            // Written only after every HTTP call is done, so the sync never holds a DB connection while waiting on GitHub.
+            transactionTemplate.executeWithoutResult(tx -> users.forEach(user ->
+                    knownUserRepository.upsert(user.username(), user.email(), user.displayName(), user.groupsCsv())));
+
+            log.info("GitHub user sync complete: {} users synced", users.size());
         } catch (Exception e) {
             log.error("GitHub user sync failed", e);
         }
@@ -113,11 +120,10 @@ public class GitHubUserDirectoryProvider implements UserDirectoryProvider {
 
     private List<GitHubUser> fetchTeamMembers(String teamSlug) {
         try {
-            return webClient.get()
+            return restClient.get()
                     .uri("/orgs/{org}/teams/{team}/members?per_page=100", properties.getOrg(), teamSlug)
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<GitHubUser>>() {})
-                    .block();
+                    .body(new ParameterizedTypeReference<List<GitHubUser>>() {});
         } catch (Exception e) {
             log.warn("Failed to fetch members for team '{}': {}", teamSlug, e.getMessage());
             return List.of();
@@ -126,11 +132,10 @@ public class GitHubUserDirectoryProvider implements UserDirectoryProvider {
 
     private List<GitHubUser> fetchOrgMembers() {
         try {
-            return webClient.get()
+            return restClient.get()
                     .uri("/orgs/{org}/members?per_page=100", properties.getOrg())
                     .retrieve()
-                    .bodyToMono(new ParameterizedTypeReference<List<GitHubUser>>() {})
-                    .block();
+                    .body(new ParameterizedTypeReference<List<GitHubUser>>() {});
         } catch (Exception e) {
             log.warn("Failed to fetch org members: {}", e.getMessage());
             return List.of();
@@ -139,11 +144,10 @@ public class GitHubUserDirectoryProvider implements UserDirectoryProvider {
 
     private GitHubUserProfile fetchUserProfile(String username) {
         try {
-            return webClient.get()
+            return restClient.get()
                     .uri("/users/{username}", username)
                     .retrieve()
-                    .bodyToMono(GitHubUserProfile.class)
-                    .block();
+                    .body(GitHubUserProfile.class);
         } catch (Exception e) {
             log.debug("Failed to fetch profile for user '{}': {}", username, e.getMessage());
             return null;
@@ -153,4 +157,6 @@ public class GitHubUserDirectoryProvider implements UserDirectoryProvider {
     record GitHubUser(String login, Long id) {}
 
     record GitHubUserProfile(String login, String name, String email) {}
+
+    private record SyncedUser(String username, String email, String displayName, String groupsCsv) {}
 }

@@ -8,12 +8,17 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -25,14 +30,21 @@ public class KeycloakUserDirectoryProvider implements UserDirectoryProvider {
 
     private final KnownUserRepository knownUserRepository;
     private final KeycloakDirectoryProperties properties;
+    private final PlatformTransactionManager transactionManager;
+    private final ClientHttpRequestFactory outboundRequestFactory;
 
-    private WebClient webClient;
+    private RestClient restClient;
+    private TransactionTemplate transactionTemplate;
 
     @PostConstruct
     void init() {
-        this.webClient = WebClient.builder()
+        // Static builder on purpose: Boot's injected one carries the global SNAKE_CASE naming,
+        // which would silently null Keycloak's camelCase firstName/lastName.
+        this.restClient = RestClient.builder()
+                .requestFactory(outboundRequestFactory)
                 .baseUrl(properties.getServerUrl())
                 .build();
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
         log.info("Keycloak user directory provider initialized: server={}, realm={}",
                 properties.getServerUrl(), properties.getRealm());
     }
@@ -58,7 +70,6 @@ public class KeycloakUserDirectoryProvider implements UserDirectoryProvider {
     }
 
     @Override
-    @Transactional
     @Scheduled(fixedDelayString = "${ephor.user-directory.keycloak.sync-interval:900000}")
     public void syncUsers() {
         log.info("Starting Keycloak user sync for realm '{}'", properties.getRealm());
@@ -66,57 +77,56 @@ public class KeycloakUserDirectoryProvider implements UserDirectoryProvider {
             String accessToken = obtainServiceToken();
             List<KeycloakUser> keycloakUsers = fetchRealmUsers(accessToken);
 
-            int synced = 0;
+            List<SyncedUser> users = new ArrayList<>();
             for (KeycloakUser kcUser : keycloakUsers) {
                 if (!kcUser.enabled()) {
                     continue;
                 }
-                String username = kcUser.username();
-                String email = kcUser.email();
-                String displayName = buildDisplayName(kcUser);
-
                 List<String> groups = fetchUserGroups(accessToken, kcUser.id());
-                String groupsCsv = String.join(",", groups);
-
-                knownUserRepository.upsert(username, email, displayName, groupsCsv);
-                synced++;
+                users.add(new SyncedUser(kcUser.username(), kcUser.email(),
+                        buildDisplayName(kcUser), String.join(",", groups)));
             }
 
-            log.info("Keycloak user sync complete: {} users synced", synced);
+            // Written only after every HTTP call is done, so the sync never holds a DB connection while waiting on Keycloak.
+            transactionTemplate.executeWithoutResult(tx -> users.forEach(user ->
+                    knownUserRepository.upsert(user.username(), user.email(), user.displayName(), user.groupsCsv())));
+
+            log.info("Keycloak user sync complete: {} users synced", users.size());
         } catch (Exception e) {
             log.error("Keycloak user sync failed", e);
         }
     }
 
     private String obtainServiceToken() {
-        Map<String, Object> response = webClient.post()
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("grant_type", "client_credentials");
+        form.add("client_id", properties.getClientId());
+        form.add("client_secret", properties.getClientSecret());
+
+        Map<String, Object> response = restClient.post()
                 .uri("/realms/{realm}/protocol/openid-connect/token", properties.getRealm())
-                .body(BodyInserters.fromFormData("grant_type", "client_credentials")
-                        .with("client_id", properties.getClientId())
-                        .with("client_secret", properties.getClientSecret()))
+                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                .body(form)
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {})
-                .block();
+                .body(new ParameterizedTypeReference<Map<String, Object>>() {});
 
         return (String) response.get("access_token");
     }
 
     private List<KeycloakUser> fetchRealmUsers(String accessToken) {
-        return webClient.get()
+        return restClient.get()
                 .uri("/admin/realms/{realm}/users?max=1000", properties.getRealm())
                 .headers(h -> h.setBearerAuth(accessToken))
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<KeycloakUser>>() {})
-                .block();
+                .body(new ParameterizedTypeReference<List<KeycloakUser>>() {});
     }
 
     private List<String> fetchUserGroups(String accessToken, String userId) {
-        List<KeycloakGroup> groups = webClient.get()
+        List<KeycloakGroup> groups = restClient.get()
                 .uri("/admin/realms/{realm}/users/{userId}/groups", properties.getRealm(), userId)
                 .headers(h -> h.setBearerAuth(accessToken))
                 .retrieve()
-                .bodyToMono(new ParameterizedTypeReference<List<KeycloakGroup>>() {})
-                .block();
+                .body(new ParameterizedTypeReference<List<KeycloakGroup>>() {});
 
         if (groups == null) {
             return List.of();
@@ -140,4 +150,6 @@ public class KeycloakUserDirectoryProvider implements UserDirectoryProvider {
                         String firstName, String lastName, boolean enabled) {}
 
     record KeycloakGroup(String id, String name, String path) {}
+
+    private record SyncedUser(String username, String email, String displayName, String groupsCsv) {}
 }

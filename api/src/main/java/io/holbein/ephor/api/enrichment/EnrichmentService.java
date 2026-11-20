@@ -7,21 +7,22 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
+import org.springframework.web.client.RestClient;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
@@ -29,7 +30,7 @@ import java.util.zip.GZIPInputStream;
  * Pulls the two public exploitation feeds -- CISA KEV (JSON) and FIRST EPSS (gzip CSV) --
  * and stamps the matching {@code vulnerabilities} rows by cve_id (ADR-004). Both feeds are
  * global, so this belongs in the platform API, not the per-cluster scanner. Mirrors the
- * directory-sync pattern: WebClient in @PostConstruct, @Scheduled entry point, last-known-good
+ * directory-sync pattern: RestClient in @PostConstruct, @Scheduled entry point, last-known-good
  * on failure (a failed feed logs and leaves prior values intact).
  */
 @Slf4j
@@ -38,22 +39,18 @@ import java.util.zip.GZIPInputStream;
 @ConditionalOnProperty(name = "ephor.enrichment.enabled", havingValue = "true", matchIfMissing = true)
 public class EnrichmentService {
 
-    // EPSS uncompresses to ~250k rows; lift the WebClient's default 256KB buffer.
-    private static final int MAX_FEED_BYTES = 64 * 1024 * 1024;
-
     private final EnrichmentProperties properties;
     private final VulnerabilityRepository vulnerabilityRepository;
     private final PlatformTransactionManager transactionManager;
+    private final ClientHttpRequestFactory outboundRequestFactory;
 
-    private WebClient webClient;
+    private RestClient restClient;
     private TransactionTemplate transactionTemplate;
 
     @PostConstruct
     void init() {
-        // Both feeds 30x-redirect (EPSS hops host then to a dated filename daily), so follow them.
-        this.webClient = WebClient.builder()
-                .clientConnector(new ReactorClientHttpConnector(HttpClient.create().followRedirect(true)))
-                .codecs(c -> c.defaultCodecs().maxInMemorySize(MAX_FEED_BYTES))
+        this.restClient = RestClient.builder()
+                .requestFactory(outboundRequestFactory)
                 .build();
         this.transactionTemplate = new TransactionTemplate(transactionManager);
         log.info("Enrichment service initialized: kevUrl={}, epssUrl={}, epssThreshold={}",
@@ -70,11 +67,10 @@ public class EnrichmentService {
     /** CISA KEV catalog -> set kev_listed/kev_date_added; clear rows that dropped out. */
     void refreshKev() {
         try {
-            KevCatalog catalog = webClient.get()
+            KevCatalog catalog = restClient.get()
                     .uri(properties.getKevUrl())
                     .retrieve()
-                    .bodyToMono(KevCatalog.class)
-                    .block();
+                    .body(KevCatalog.class);
 
             if (catalog == null || catalog.vulnerabilities() == null || catalog.vulnerabilities().isEmpty()) {
                 log.warn("KEV feed returned no entries; keeping last-known-good");
@@ -105,35 +101,40 @@ public class EnrichmentService {
     /** FIRST EPSS daily CSV -> set epss_score/epss_percentile for tracked CVEs only. */
     void refreshEpss() {
         try {
-            byte[] gz = webClient.get()
-                    .uri(properties.getEpssUrl())
-                    .retrieve()
-                    .bodyToMono(byte[].class)
-                    .block();
-
-            if (gz == null || gz.length == 0) {
-                log.warn("EPSS feed returned no data; keeping last-known-good");
-                return;
-            }
-
-            // Only the CVEs we actually track; we never persist the ~250k rows we don't use.
+            // Only the CVEs we actually track; we never hold the ~250k rows we don't use.
             Set<String> tracked = new HashSet<>(vulnerabilityRepository.findDistinctCveIds());
             if (tracked.isEmpty()) {
                 log.info("EPSS enrichment skipped: no tracked CVEs");
                 return;
             }
 
-            int matched = transactionTemplate.execute(tx -> applyEpss(gz, tracked));
-            log.info("EPSS enrichment complete: {} of {} tracked CVEs scored", matched, tracked.size());
+            // Parsed while streaming, outside the transaction: the download must not hold a DB connection.
+            Map<String, EpssScore> scores = restClient.get()
+                    .uri(properties.getEpssUrl())
+                    .exchange((request, response) -> {
+                        if (response.getStatusCode().isError()) {
+                            throw new IllegalStateException("EPSS feed returned " + response.getStatusCode());
+                        }
+                        return parseEpss(response.getBody(), tracked);
+                    });
+
+            if (scores == null || scores.isEmpty()) {
+                log.warn("EPSS feed matched no tracked CVEs; keeping last-known-good");
+                return;
+            }
+
+            transactionTemplate.executeWithoutResult(tx -> scores.forEach((cveId, score) ->
+                    vulnerabilityRepository.updateEpss(cveId, score.score(), score.percentile())));
+            log.info("EPSS enrichment complete: {} of {} tracked CVEs scored", scores.size(), tracked.size());
         } catch (Exception e) {
             log.error("EPSS enrichment failed; keeping last-known-good", e);
         }
     }
 
-    int applyEpss(byte[] gz, Set<String> tracked) {
-        int matched = 0;
+    Map<String, EpssScore> parseEpss(InputStream gz, Set<String> tracked) {
+        Map<String, EpssScore> scores = new HashMap<>();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-                new GZIPInputStream(new ByteArrayInputStream(gz)), StandardCharsets.UTF_8))) {
+                new GZIPInputStream(gz), StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
                 // Skip the leading "#model_version,..." comment and the "cve,epss,percentile" header.
@@ -145,9 +146,7 @@ public class EnrichmentService {
                     continue;
                 }
                 try {
-                    vulnerabilityRepository.updateEpss(parts[0],
-                            Double.parseDouble(parts[1]), Double.parseDouble(parts[2]));
-                    matched++;
+                    scores.put(parts[0], new EpssScore(Double.parseDouble(parts[1]), Double.parseDouble(parts[2])));
                 } catch (NumberFormatException ignored) {
                     // Malformed row; skip it rather than failing the whole feed.
                 }
@@ -155,7 +154,7 @@ public class EnrichmentService {
         } catch (Exception e) {
             throw new IllegalStateException("Failed to parse EPSS CSV", e);
         }
-        return matched;
+        return scores;
     }
 
     private static LocalDate parseDate(String value) {
@@ -168,6 +167,8 @@ public class EnrichmentService {
             return null;
         }
     }
+
+    record EpssScore(double score, double percentile) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record KevCatalog(List<KevEntry> vulnerabilities) {}
